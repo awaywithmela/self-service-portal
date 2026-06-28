@@ -21,7 +21,10 @@ class AuthPage extends StatelessWidget {
                   children: [
                     Text(
                       'Please select your status to continue',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.lightText),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(color: AppTheme.lightText),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 36),
@@ -51,45 +54,73 @@ class AuthPage extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(32, MediaQuery.of(context).padding.top + 48, 32, 44),
+      padding: EdgeInsets.fromLTRB(
+          28, MediaQuery.of(context).padding.top + 28, 28, 32),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.tealDark, AppTheme.primaryTeal],
+          colors: [AppTheme.tealDark, Color(0xFF2FAFAF)],
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(36),
-          bottomRight: Radius.circular(36),
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
             ),
-            child: const Icon(Icons.verified_user_rounded, size: 56, color: Colors.white),
+            child: const Icon(Icons.verified_user_rounded,
+                size: 34, color: Colors.white),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Self Service Portal',
-            style: GoogleFonts.nunito(
-              fontSize: 30,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Ipsos Interviewer Hub',
-            style: GoogleFonts.nunito(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.82),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ipsos Interviewer Hub',
+                  style: GoogleFonts.nunito(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.78),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Self Service Portal',
+                  style: GoogleFonts.nunito(
+                    fontSize: 29,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Secure interviewer access',
+                    style: GoogleFonts.nunito(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.88),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
