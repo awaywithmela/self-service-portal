@@ -14,12 +14,7 @@ class App extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       builder: (context, child) => ColoredBox(
         color: AppTheme.tealSurface,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: child!,
-          ),
-        ),
+        child: child!,
       ),
     );
   }

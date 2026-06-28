@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/loading_dialog.dart';
+import '../../../../core/widgets/page_content.dart';
 import '../providers/device_notifier.dart';
 
 class UpdateIReachPage extends ConsumerStatefulWidget {
@@ -42,7 +43,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
       builder: (_) => const LoadingDialog(message: 'Validating device...'),
     );
 
-    final success = await ref.read(deviceNotifierProvider.notifier).validateDevice(_deviceIdController.text);
+    final success = await ref
+        .read(deviceNotifierProvider.notifier)
+        .validateDevice(_deviceIdController.text);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -58,7 +61,8 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
   Future<void> _executeUpdate() async {
     if (!_iReachClosed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please confirm iReach is closed before proceeding')),
+        const SnackBar(
+            content: Text('Please confirm iReach is closed before proceeding')),
       );
       return;
     }
@@ -69,7 +73,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
       builder: (_) => const LoadingDialog(message: 'Initiating update...'),
     );
 
-    final success = await ref.read(deviceNotifierProvider.notifier).executeIReachUpdate(_deviceIdController.text);
+    final success = await ref
+        .read(deviceNotifierProvider.notifier)
+        .executeIReachUpdate(_deviceIdController.text);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -97,15 +103,13 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: deviceState.updateStarted
-              ? _buildUpdateSuccess(context, deviceState.updateMessage ?? 'Update started successfully')
-              : deviceState.isValidated
-                  ? _buildUpdatePrompt(context)
-                  : _buildDeviceEntry(context),
-        ),
+      body: PageContent(
+        child: deviceState.updateStarted
+            ? _buildUpdateSuccess(context,
+                deviceState.updateMessage ?? 'Update started successfully')
+            : deviceState.isValidated
+                ? _buildUpdatePrompt(context)
+                : _buildDeviceEntry(context),
       ),
     );
   }
@@ -122,9 +126,12 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.system_update, size: 36, color: Theme.of(context).primaryColor),
+                    Icon(Icons.system_update,
+                        size: 36, color: Theme.of(context).primaryColor),
                     const SizedBox(width: 16),
-                    Expanded(child: Text('Update iReach Application', style: Theme.of(context).textTheme.headlineSmall)),
+                    Expanded(
+                        child: Text('Update iReach Application',
+                            style: Theme.of(context).textTheme.headlineSmall)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -137,7 +144,11 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
           ),
         ),
         const SizedBox(height: 48),
-        Text('Device ID', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+        Text('Device ID',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         TextField(
           controller: _deviceIdController,
@@ -168,12 +179,16 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, size: 36, color: Colors.orange.shade700),
+                    Icon(Icons.warning_amber_rounded,
+                        size: 36, color: Colors.orange.shade700),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         'Important: Close iReach First',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.orange.shade700),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(color: Colors.orange.shade700),
                       ),
                     ),
                   ],
@@ -194,9 +209,14 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Follow These Steps:', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text('Follow These Steps:',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                _buildStep(context, 'Locate the iReach application on your device'),
+                _buildStep(
+                    context, 'Locate the iReach application on your device'),
                 _buildStep(context, 'Close all iReach windows and dialogues'),
                 _buildStep(context, 'Make sure iReach is completely closed'),
                 _buildStep(context, 'Return here when done'),
@@ -208,8 +228,10 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
         CheckboxListTile(
           value: _iReachClosed,
           onChanged: (value) => setState(() => _iReachClosed = value ?? false),
-          title: Text('I have closed iReach', style: Theme.of(context).textTheme.titleMedium),
-          subtitle: Text('Confirm that iReach is completely closed', style: Theme.of(context).textTheme.bodyMedium),
+          title: Text('I have closed iReach',
+              style: Theme.of(context).textTheme.titleMedium),
+          subtitle: Text('Confirm that iReach is completely closed',
+              style: Theme.of(context).textTheme.bodyMedium),
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
         const SizedBox(height: 32),
@@ -231,15 +253,21 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
             padding: const EdgeInsets.all(40),
             child: Column(
               children: [
-                Icon(Icons.check_circle_outline, color: Colors.green.shade600, size: 80),
+                Icon(Icons.check_circle_outline,
+                    color: Colors.green.shade600, size: 80),
                 const SizedBox(height: 24),
                 Text(
                   'Update Started Successfully',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.green.shade600),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(color: Colors.green.shade600),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text(message, style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
+                Text(message,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -270,21 +298,28 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline, size: 32, color: Theme.of(context).primaryColor),
+                    Icon(Icons.info_outline,
+                        size: 32, color: Theme.of(context).primaryColor),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
                         'What to Expect Next',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                _buildStep(context, 'iReach will automatically close and update'),
+                _buildStep(
+                    context, 'iReach will automatically close and update'),
                 _buildStep(context, 'Please do not turn off your device'),
-                _buildStep(context, 'Your device may restart during the process'),
-                _buildStep(context, 'iReach will reopen automatically when complete'),
+                _buildStep(
+                    context, 'Your device may restart during the process'),
+                _buildStep(
+                    context, 'iReach will reopen automatically when complete'),
               ],
             ),
           ),
@@ -311,7 +346,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
           Container(
             width: 32,
             height: 32,
-            decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius: BorderRadius.circular(8)),
             child: Icon(Icons.check, size: 20, color: Colors.green.shade700),
           ),
           const SizedBox(width: 16),

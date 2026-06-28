@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/entities/device_entity.dart';
 import '../../../../core/widgets/loading_dialog.dart';
+import '../../../../core/widgets/page_content.dart';
 import '../providers/device_notifier.dart';
 import '../widgets/setup_instruction.dart';
 
@@ -36,7 +37,9 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
       builder: (_) => const LoadingDialog(message: 'Validating device...'),
     );
 
-    final success = await ref.read(deviceNotifierProvider.notifier).validateDevice(_deviceIdController.text);
+    final success = await ref
+        .read(deviceNotifierProvider.notifier)
+        .validateDevice(_deviceIdController.text);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -64,13 +67,10 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: deviceState.isValidated
-              ? _buildSetupInstructions(context, deviceState.device!)
-              : _buildDeviceIdEntry(context),
-        ),
+      body: PageContent(
+        child: deviceState.isValidated
+            ? _buildSetupInstructions(context, deviceState.device!)
+            : _buildDeviceIdEntry(context),
       ),
     );
   }
@@ -87,10 +87,12 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.devices, size: 36, color: Theme.of(context).primaryColor),
+                    Icon(Icons.devices,
+                        size: 36, color: Theme.of(context).primaryColor),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: Text('Enter Your Device ID', style: Theme.of(context).textTheme.headlineSmall),
+                      child: Text('Enter Your Device ID',
+                          style: Theme.of(context).textTheme.headlineSmall),
                     ),
                   ],
                 ),
@@ -106,7 +108,10 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
         const SizedBox(height: 48),
         Text(
           'Device ID',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -136,7 +141,8 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green.shade700, size: 32),
+                Icon(Icons.check_circle,
+                    color: Colors.green.shade700, size: 32),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -144,13 +150,15 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
                     children: [
                       Text(
                         'Device Validated',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Device Type: ${device.type.displayName}', style: Theme.of(context).textTheme.bodyMedium),
+                      Text('Device Type: ${device.type.displayName}',
+                          style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
@@ -159,7 +167,8 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
           ),
         ),
         const SizedBox(height: 32),
-        Text('Setup Instructions', style: Theme.of(context).textTheme.headlineSmall),
+        Text('Setup Instructions',
+            style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
         switch (device.type) {
           DeviceType.windowsLaptop => _buildWindowsInstructions(),
@@ -182,14 +191,23 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
 
   Widget _buildWindowsInstructions() {
     return const Column(children: [
-      SetupInstruction(number: 1, title: 'Connect to WiFi', description: 'Click the WiFi icon in the system tray and select your network', details: '''
+      SetupInstruction(
+          number: 1,
+          title: 'Connect to WiFi',
+          description:
+              'Click the WiFi icon in the system tray and select your network',
+          details: '''
 1. Look for the WiFi icon in the bottom-right corner
 2. Click on it and wait for available networks to appear
 3. Select your home network from the list
 4. Enter the WiFi password if required
 5. Wait for connection confirmation'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 2, title: 'Login to MS Teams', description: 'Open Microsoft Teams and sign in with your credentials', details: '''
+      SetupInstruction(
+          number: 2,
+          title: 'Login to MS Teams',
+          description: 'Open Microsoft Teams and sign in with your credentials',
+          details: '''
 1. Click on the Start menu and search for "Teams"
 2. Open Microsoft Teams
 3. Enter your work email address
@@ -197,21 +215,33 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
 5. Complete any two-factor authentication if required
 6. You're ready to use Teams!'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 3, title: 'Install Ipsos Apps', description: 'Download and install the required Ipsos applications', details: '''
+      SetupInstruction(
+          number: 3,
+          title: 'Install Ipsos Apps',
+          description: 'Download and install the required Ipsos applications',
+          details: '''
 1. Open your web browser
 2. Navigate to the Ipsos app portal
 3. Download the iReach application
 4. Run the installer and follow the prompts
 5. Sign in with your credentials when prompted'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 4, title: 'Sync to Android Showcard', description: 'Connect your Android tablet for data synchronization', details: '''
+      SetupInstruction(
+          number: 4,
+          title: 'Sync to Android Showcard',
+          description: 'Connect your Android tablet for data synchronization',
+          details: '''
 1. Install the Ipsos Sync app on your Android tablet
 2. Open the app and note the device code
 3. On your laptop, open Ipsos Sync settings
 4. Enter the device code from your tablet
 5. Confirm the connection on both devices'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 5, title: 'Helpdesk Contact', description: 'Save the helpdesk contact information', details: '''
+      SetupInstruction(
+          number: 5,
+          title: 'Helpdesk Contact',
+          description: 'Save the helpdesk contact information',
+          details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
@@ -220,28 +250,44 @@ Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
 
   Widget _buildAndroidInstructions() {
     return const Column(children: [
-      SetupInstruction(number: 1, title: 'Connect to WiFi', description: 'Connect your tablet to your home WiFi network', details: '''
+      SetupInstruction(
+          number: 1,
+          title: 'Connect to WiFi',
+          description: 'Connect your tablet to your home WiFi network',
+          details: '''
 1. Swipe down from the top to open Settings
 2. Tap "WiFi"
 3. Select your home network
 4. Enter the WiFi password
 5. Wait for connection confirmation'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 2, title: 'Install Microsoft Teams', description: 'Download Teams from Google Play Store', details: '''
+      SetupInstruction(
+          number: 2,
+          title: 'Install Microsoft Teams',
+          description: 'Download Teams from Google Play Store',
+          details: '''
 1. Open Google Play Store
 2. Search for "Microsoft Teams"
 3. Tap Install
 4. Once installed, tap Open
 5. Sign in with your work email'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 3, title: 'Install Ipsos Apps', description: 'Install the required Ipsos applications', details: '''
+      SetupInstruction(
+          number: 3,
+          title: 'Install Ipsos Apps',
+          description: 'Install the required Ipsos applications',
+          details: '''
 1. Open Google Play Store
 2. Search for "Ipsos iReach"
 3. Tap Install
 4. Once installed, open the app
 5. Sign in with your credentials'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 4, title: 'Helpdesk Contact', description: 'Save the helpdesk contact information', details: '''
+      SetupInstruction(
+          number: 4,
+          title: 'Helpdesk Contact',
+          description: 'Save the helpdesk contact information',
+          details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
@@ -250,28 +296,44 @@ Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
 
   Widget _buildIosInstructions() {
     return const Column(children: [
-      SetupInstruction(number: 1, title: 'Connect to WiFi', description: 'Connect your iPad to your home WiFi network', details: '''
+      SetupInstruction(
+          number: 1,
+          title: 'Connect to WiFi',
+          description: 'Connect your iPad to your home WiFi network',
+          details: '''
 1. Go to Settings
 2. Tap WiFi
 3. Select your home network
 4. Enter the WiFi password
 5. Wait for connection confirmation'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 2, title: 'Install Microsoft Teams', description: 'Download Teams from App Store', details: '''
+      SetupInstruction(
+          number: 2,
+          title: 'Install Microsoft Teams',
+          description: 'Download Teams from App Store',
+          details: '''
 1. Open App Store
 2. Search for "Microsoft Teams"
 3. Tap Get then Install
 4. Once installed, tap Open
 5. Sign in with your work email'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 3, title: 'Install Ipsos Apps', description: 'Install the required Ipsos applications', details: '''
+      SetupInstruction(
+          number: 3,
+          title: 'Install Ipsos Apps',
+          description: 'Install the required Ipsos applications',
+          details: '''
 1. Open App Store
 2. Search for "Ipsos iReach"
 3. Tap Get then Install
 4. Once installed, open the app
 5. Sign in with your credentials'''),
       SizedBox(height: 16),
-      SetupInstruction(number: 4, title: 'Helpdesk Contact', description: 'Save the helpdesk contact information', details: '''
+      SetupInstruction(
+          number: 4,
+          title: 'Helpdesk Contact',
+          description: 'Save the helpdesk contact information',
+          details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),

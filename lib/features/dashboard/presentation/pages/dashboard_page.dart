@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../../../../app/theme.dart';
+import '../../../../core/widgets/page_content.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -28,55 +29,55 @@ class DashboardPage extends ConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(28.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildWelcomeCard(context, authState.user?.username),
-              const SizedBox(height: 36),
-              Text(
-                'What would you like to do?',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 20),
-              _buildActionCard(
-                context,
-                title: 'Update iReach',
-                description: 'Install the latest version when ready',
-                icon: Icons.system_update_alt_rounded,
-                onTap: () => context.go('/update-ireach'),
-              ),
-              const SizedBox(height: 16),
-              _buildActionCard(
-                context,
-                title: 'Device Information',
-                description: 'View and manage your device details',
-                icon: Icons.devices_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Device information feature coming soon')),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildActionCard(
-                context,
-                title: 'Get Support',
-                description: 'Contact helpdesk for assistance',
-                icon: Icons.support_agent_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Helpdesk: helpdesk@ipsos.com  |  1-800-IPSOS-HELP'),
-                      duration: Duration(seconds: 4),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+      body: PageContent(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildWelcomeCard(context, authState.user?.username),
+            const SizedBox(height: 36),
+            Text(
+              'What would you like to do?',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 20),
+            _buildActionCard(
+              context,
+              title: 'Update iReach',
+              description: 'Install the latest version when ready',
+              icon: Icons.system_update_alt_rounded,
+              onTap: () => context.go('/update-ireach'),
+            ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              title: 'Device Information',
+              description: 'View and manage your device details',
+              icon: Icons.devices_rounded,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Device information feature coming soon')),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildActionCard(
+              context,
+              title: 'Get Support',
+              description: 'Contact helpdesk for assistance',
+              icon: Icons.support_agent_rounded,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Helpdesk: helpdesk@ipsos.com  |  1-800-IPSOS-HELP'),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -108,7 +109,8 @@ class DashboardPage extends ConsumerWidget {
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.sentiment_satisfied_alt_rounded, size: 36, color: Colors.white),
+            child: const Icon(Icons.sentiment_satisfied_alt_rounded,
+                size: 36, color: Colors.white),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -176,12 +178,14 @@ class DashboardPage extends ConsumerWidget {
                   children: [
                     Text(title, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 6),
-                    Text(description, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(description,
+                        style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 20, color: AppTheme.tealLight),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 20, color: AppTheme.tealLight),
             ],
           ),
         ),
