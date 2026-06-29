@@ -1,11 +1,18 @@
 import '../entities/device_entity.dart';
 import '../repositories/device_repository.dart';
 import '../../../../core/errors/result.dart';
+import '../../../../core/usecases/use_case.dart';
 
-class ValidateDevice {
+final class ValidateDeviceParams {
+  final String deviceId;
+  const ValidateDeviceParams(this.deviceId);
+}
+
+class ValidateDevice implements UseCase<DeviceEntity, ValidateDeviceParams> {
   final DeviceRepository _repository;
   const ValidateDevice(this._repository);
 
-  Future<Result<DeviceEntity>> call(String deviceId) =>
-      _repository.validateDevice(deviceId);
+  @override
+  Future<Result<DeviceEntity>> call(ValidateDeviceParams params) =>
+      _repository.validateDevice(params.deviceId);
 }

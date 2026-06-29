@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/result.dart';
+import '../../domain/usecases/authenticate_new_interviewer.dart';
+import '../../domain/usecases/authenticate_existing_interviewer.dart';
 import 'auth_state.dart';
 import 'auth_providers.dart';
 
@@ -9,7 +11,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> authenticateNewInterviewer(String email, String lastFourDigits) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    final result = await ref.read(authenticateNewInterviewerProvider).call(email, lastFourDigits);
+    final result = await ref.read(authenticateNewInterviewerProvider).call(
+          AuthenticateNewInterviewerParams(email: email, lastFourDigits: lastFourDigits),
+        );
     switch (result) {
       case Success(:final data):
         state = state.copyWith(isLoading: false, isAuthenticated: true, user: data);
@@ -22,7 +26,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<bool> authenticateExistingInterviewer(String username, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
-    final result = await ref.read(authenticateExistingInterviewerProvider).call(username, password);
+    final result = await ref.read(authenticateExistingInterviewerProvider).call(
+          AuthenticateExistingInterviewerParams(username: username, password: password),
+        );
     switch (result) {
       case Success(:final data):
         state = state.copyWith(isLoading: false, isAuthenticated: true, user: data);

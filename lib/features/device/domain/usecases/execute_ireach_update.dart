@@ -1,10 +1,17 @@
 import '../repositories/device_repository.dart';
 import '../../../../core/errors/result.dart';
+import '../../../../core/usecases/use_case.dart';
 
-class ExecuteIReachUpdate {
+final class ExecuteIReachUpdateParams {
+  final String deviceId;
+  const ExecuteIReachUpdateParams(this.deviceId);
+}
+
+class ExecuteIReachUpdate implements UseCase<String, ExecuteIReachUpdateParams> {
   final DeviceRepository _repository;
   const ExecuteIReachUpdate(this._repository);
 
-  Future<Result<String>> call(String deviceId) =>
-      _repository.executeIReachUpdate(deviceId);
+  @override
+  Future<Result<String>> call(ExecuteIReachUpdateParams params) =>
+      _repository.executeIReachUpdate(params.deviceId);
 }

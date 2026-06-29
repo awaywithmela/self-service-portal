@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/result.dart';
+import '../../domain/usecases/validate_device.dart';
+import '../../domain/usecases/execute_ireach_update.dart';
 import 'device_state.dart';
 import 'device_providers.dart';
 
@@ -9,7 +11,9 @@ class DeviceNotifier extends Notifier<DeviceState> {
 
   Future<bool> validateDevice(String deviceId) async {
     state = state.copyWith(isValidating: true, clearError: true);
-    final result = await ref.read(validateDeviceProvider).call(deviceId);
+    final result = await ref
+        .read(validateDeviceProvider)
+        .call(ValidateDeviceParams(deviceId));
     switch (result) {
       case Success(:final data):
         state = state.copyWith(isValidating: false, device: data);
@@ -22,7 +26,9 @@ class DeviceNotifier extends Notifier<DeviceState> {
 
   Future<bool> executeIReachUpdate(String deviceId) async {
     state = state.copyWith(isUpdating: true, clearError: true);
-    final result = await ref.read(executeIReachUpdateProvider).call(deviceId);
+    final result = await ref
+        .read(executeIReachUpdateProvider)
+        .call(ExecuteIReachUpdateParams(deviceId));
     switch (result) {
       case Success(:final data):
         state = state.copyWith(isUpdating: false, updateStarted: true, updateMessage: data);
@@ -36,4 +42,5 @@ class DeviceNotifier extends Notifier<DeviceState> {
   void reset() => state = const DeviceState.initial();
 }
 
-final deviceNotifierProvider = NotifierProvider<DeviceNotifier, DeviceState>(DeviceNotifier.new);
+final deviceNotifierProvider =
+    NotifierProvider<DeviceNotifier, DeviceState>(DeviceNotifier.new);

@@ -1,8 +1,8 @@
 import '../../../../core/network/network_client.dart';
 import '../models/user_model.dart';
-import '../../domain/entities/user_entity.dart';
+import 'auth_data_source.dart';
 
-class AuthRemoteDataSource {
+class AuthRemoteDataSource implements AuthDataSource {
   // ignore: unused_field
   final NetworkClient _client;
   const AuthRemoteDataSource(this._client);
@@ -20,6 +20,7 @@ class AuthRemoteDataSource {
     'admin': 'admin123',
   };
 
+  @override
   Future<UserModel> authenticateNewInterviewer(String email, String lastFourDigits) async {
     // TODO: replace with real API call
     // final response = await _client.post('/api/auth/new-interviewer', data: {
@@ -33,9 +34,10 @@ class AuthRemoteDataSource {
       throw Exception('Email or phone number not recognised. Please check your details and try again.');
     }
 
-    return UserModel(id: email, username: email, type: UserType.newInterviewer);
+    return UserModel(id: email, username: email, userType: 'new');
   }
 
+  @override
   Future<UserModel> authenticateExistingInterviewer(String username, String password) async {
     // TODO: replace with real API call
     // final response = await _client.post('/api/auth/login', data: {
@@ -49,6 +51,6 @@ class AuthRemoteDataSource {
       throw Exception('Incorrect username or password. Please try again.');
     }
 
-    return UserModel(id: username, username: username, type: UserType.existingInterviewer);
+    return UserModel(id: username, username: username, userType: 'existing');
   }
 }

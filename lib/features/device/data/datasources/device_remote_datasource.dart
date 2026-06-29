@@ -1,8 +1,8 @@
 import '../../../../core/network/network_client.dart';
-import '../../domain/entities/device_entity.dart';
 import '../models/device_model.dart';
+import 'device_data_source.dart';
 
-class DeviceRemoteDataSource {
+class DeviceRemoteDataSource implements DeviceDataSource {
   // ignore: unused_field
   final NetworkClient _client;
   const DeviceRemoteDataSource(this._client);
@@ -18,6 +18,7 @@ class DeviceRemoteDataSource {
     'IOS-002': (type: 'ios', name: 'iPad-IOS-002'),
   };
 
+  @override
   Future<DeviceModel> validateDevice(String deviceId) async {
     // TODO: replace with real RMM API call
     // final response = await _client.get('/api/devices/validate/$deviceId');
@@ -29,13 +30,10 @@ class DeviceRemoteDataSource {
       throw Exception('Device ID "$deviceId" not found. Please check the ID and try again.');
     }
 
-    return DeviceModel(
-      deviceId: deviceId,
-      type: DeviceType.fromString(device.type),
-      name: device.name,
-    );
+    return DeviceModel(deviceId: deviceId, deviceType: device.type, deviceName: device.name);
   }
 
+  @override
   Future<String> executeIReachUpdate(String deviceId) async {
     // TODO: replace with real RMM API call
     // await _client.post('/api/updates/ireach/execute/$deviceId');

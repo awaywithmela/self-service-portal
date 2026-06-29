@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/datasources/device_data_source.dart';
 import '../../data/datasources/device_remote_datasource.dart';
 import '../../data/repositories/device_repository_impl.dart';
 import '../../domain/repositories/device_repository.dart';
@@ -6,7 +7,7 @@ import '../../domain/usecases/validate_device.dart';
 import '../../domain/usecases/execute_ireach_update.dart';
 import '../../../../core/network/network_providers.dart';
 
-final _deviceDataSourceProvider = Provider<DeviceRemoteDataSource>((ref) {
+final _deviceDataSourceProvider = Provider<DeviceDataSource>((ref) {
   return DeviceRemoteDataSource(ref.read(networkClientProvider));
 });
 

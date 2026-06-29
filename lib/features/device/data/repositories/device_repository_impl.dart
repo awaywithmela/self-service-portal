@@ -2,10 +2,10 @@ import '../../domain/entities/device_entity.dart';
 import '../../domain/repositories/device_repository.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/result.dart';
-import '../datasources/device_remote_datasource.dart';
+import '../datasources/device_data_source.dart';
 
 class DeviceRepositoryImpl implements DeviceRepository {
-  final DeviceRemoteDataSource _dataSource;
+  final DeviceDataSource _dataSource;
   const DeviceRepositoryImpl(this._dataSource);
 
   @override
@@ -14,10 +14,10 @@ class DeviceRepositoryImpl implements DeviceRepository {
       return const Err(DeviceFailure('Device ID must be at least 5 characters'));
     }
     try {
-      final device = await _dataSource.validateDevice(deviceId);
-      return Success(device);
-    } catch (e) {
-      return Err(DeviceFailure('Device validation failed: $e'));
+      final model = await _dataSource.validateDevice(deviceId);
+      return Success(model.toEntity());
+    } on Exception catch (e) {
+      return Err(DeviceFailure(_extractMessage(e)));
     }
   }
 
@@ -26,8 +26,11 @@ class DeviceRepositoryImpl implements DeviceRepository {
     try {
       final message = await _dataSource.executeIReachUpdate(deviceId);
       return Success(message);
-    } catch (e) {
-      return Err(DeviceFailure('Update failed: $e'));
+    } on Exception catch (e) {
+      return Err(DeviceFailure(_extractMessage(e)));
     }
   }
+
+  String _extractMessage(Exception e) =>
+      e.toString().replaceFirst('Exception: ', '');
 }
