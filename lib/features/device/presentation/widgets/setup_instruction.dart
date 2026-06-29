@@ -8,12 +8,12 @@ class SetupInstruction extends StatefulWidget {
   final String details;
 
   const SetupInstruction({
-    Key? key,
+    super.key,
     required this.number,
     required this.title,
     required this.description,
     required this.details,
-  }) : super(key: key);
+  });
 
   @override
   State<SetupInstruction> createState() => _SetupInstructionState();

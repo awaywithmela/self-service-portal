@@ -4,18 +4,18 @@ sealed class AppFailure {
 }
 
 final class AuthFailure extends AppFailure {
-  const AuthFailure(String message) : super(message);
+  const AuthFailure(super.message);
 }
 
 final class DeviceFailure extends AppFailure {
-  const DeviceFailure(String message) : super(message);
+  const DeviceFailure(super.message);
 }
 
 final class NetworkFailure extends AppFailure {
-  const NetworkFailure(String message) : super(message);
+  const NetworkFailure(super.message);
 }
 
 final class ServerFailure extends AppFailure {
   final int? statusCode;
-  const ServerFailure(String message, {this.statusCode}) : super(message);
+  const ServerFailure(super.message, {this.statusCode});
 }
