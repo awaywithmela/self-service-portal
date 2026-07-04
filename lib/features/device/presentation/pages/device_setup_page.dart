@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/entities/device_entity.dart';
 import '../../../../core/widgets/loading_dialog.dart';
 import '../../../../core/widgets/page_content.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 import '../providers/device_notifier.dart';
 import '../widgets/setup_instruction.dart';
 
@@ -16,6 +17,7 @@ class DeviceSetupPage extends ConsumerStatefulWidget {
 
 class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
   final _deviceIdController = TextEditingController();
+  final Set<int> _completedSteps = {};
 
   @override
   void dispose() {
@@ -43,6 +45,9 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
 
     if (mounted) {
       Navigator.of(context).pop();
+      if (success) {
+        setState(_completedSteps.clear);
+      }
       if (!success) {
         final error = ref.read(deviceNotifierProvider).error;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,17 +73,51 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
         ),
       ),
       body: PageContent(
+        maxWidth: 760,
         child: deviceState.isValidated
             ? _buildSetupInstructions(context, deviceState.device!)
             : _buildDeviceIdEntry(context),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showSupportSheet(context),
+        icon: const Icon(Icons.support_agent_rounded),
+        label: const Text('Help'),
       ),
     );
   }
 
   Widget _buildDeviceIdEntry(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+    final interviewerName = authState.user?.username;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Welcome to Ipsos',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 10),
+                Text(
+                  interviewerName == null
+                      ? 'Your interviewer record has been verified.'
+                      : 'Your interviewer record has been verified for $interviewerName.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Next, enter the device ID printed on the laptop, tablet, or device package. The device record determines which static setup knowledge guide you will see.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -98,7 +137,7 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'You can find your device ID on your device or in the setup package provided to you.',
+                  'You can find your device ID on the QR/device label, on the device itself, or in the setup package provided to you.',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ],
@@ -117,7 +156,7 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
         TextField(
           controller: _deviceIdController,
           decoration: const InputDecoration(
-            hintText: 'e.g., LAP-ABC-12345',
+            hintText: 'e.g., COMNUM1223 or LAP-ABC-12345',
             prefixIcon: Icon(Icons.devices, size: 28),
           ),
         ),
@@ -132,6 +171,11 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
   }
 
   Widget _buildSetupInstructions(BuildContext context, DeviceEntity device) {
+    final instructions = _instructionsForDevice(device.type);
+    final totalSteps = instructions.length;
+    final completedCount = _completedSteps.length;
+    final canComplete = completedCount == totalSteps;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -159,6 +203,11 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
                       const SizedBox(height: 4),
                       Text('Device Type: ${device.type.displayName}',
                           style: Theme.of(context).textTheme.bodyMedium),
+                      if (device.name != null) ...[
+                        const SizedBox(height: 2),
+                        Text('Device Name: ${device.name}',
+                            style: Theme.of(context).textTheme.bodyMedium),
+                      ],
                     ],
                   ),
                 ),
@@ -166,212 +215,293 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
             ),
           ),
         ),
-        const SizedBox(height: 32),
-        Text('Setup Instructions',
+        const SizedBox(height: 24),
+        _buildProgressCard(context, completedCount, totalSteps),
+        const SizedBox(height: 28),
+        Text('Knowledge Guide',
             style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
-        switch (device.type) {
-          DeviceType.windowsLaptop => _buildWindowsInstructions(),
-          DeviceType.androidTablet => _buildAndroidInstructions(),
-          DeviceType.iosTablet => _buildIosInstructions(),
-          DeviceType.unknown => _buildGenericInstructions(context),
-        },
+        ...instructions.map((instruction) {
+          final index = instructions.indexOf(instruction) + 1;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SetupInstruction(
+              number: index,
+              title: instruction.title,
+              description: instruction.description,
+              details: instruction.details,
+              isComplete: _completedSteps.contains(index),
+              onCompleteChanged: (value) {
+                setState(() {
+                  if (value) {
+                    _completedSteps.add(index);
+                  } else {
+                    _completedSteps.remove(index);
+                  }
+                });
+              },
+            ),
+          );
+        }),
         const SizedBox(height: 32),
         ElevatedButton.icon(
-          onPressed: () {
-            ref.read(deviceNotifierProvider.notifier).reset();
-            context.go('/auth');
-          },
+          onPressed: canComplete
+              ? () {
+                  ref.read(deviceNotifierProvider.notifier).reset();
+                  context.go('/auth');
+                }
+              : null,
           icon: const Icon(Icons.check),
-          label: const Text('Setup Complete'),
+          label: Text(canComplete
+              ? 'Setup Complete'
+              : 'Complete all steps to finish setup'),
         ),
       ],
     );
   }
 
-  Widget _buildWindowsInstructions() {
-    return const Column(children: [
-      SetupInstruction(
-          number: 1,
-          title: 'Connect to WiFi',
-          description:
-              'Click the WiFi icon in the system tray and select your network',
-          details: '''
+  Widget _buildProgressCard(
+    BuildContext context,
+    int completedCount,
+    int totalSteps,
+  ) {
+    final progress = totalSteps == 0 ? 0.0 : completedCount / totalSteps;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.task_alt_rounded, color: Color(0xFF2E9D5C)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '$completedCount of $totalSteps steps complete',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<_InstructionData> _instructionsForDevice(DeviceType type) {
+    return switch (type) {
+      DeviceType.windowsLaptop => _windowsInstructions,
+      DeviceType.androidTablet => _androidInstructions,
+      DeviceType.iosTablet => _iosInstructions,
+      DeviceType.unknown => _genericInstructions,
+    };
+  }
+
+  static const _windowsInstructions = [
+    _InstructionData(
+        title: 'Get Your Laptop PIN',
+        description: 'Use your verified device ID when requesting the PIN',
+        details: '''
+1. Keep this portal open on your phone or tablet after scanning the QR code
+2. Confirm the device ID shown on your laptop or package
+3. Contact Helpdesk and provide your name and device ID
+4. Helpdesk will confirm your onboarding record
+5. Enter the PIN provided by Helpdesk on the laptop sign-in screen'''),
+    _InstructionData(
+        title: 'Connect to WiFi',
+        description:
+            'After signing in, connect the laptop to your home WiFi network',
+        details: '''
 1. Look for the WiFi icon in the bottom-right corner
 2. Click on it and wait for available networks to appear
 3. Select your home network from the list
 4. Enter the WiFi password if required
 5. Wait for connection confirmation'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 2,
-          title: 'Login to MS Teams',
-          description: 'Open Microsoft Teams and sign in with your credentials',
-          details: '''
+    _InstructionData(
+        title: 'Login to MS Teams',
+        description: 'Open Microsoft Teams and sign in with your credentials',
+        details: '''
 1. Click on the Start menu and search for "Teams"
 2. Open Microsoft Teams
 3. Enter your work email address
 4. When prompted, enter your password
 5. Complete any two-factor authentication if required
 6. You're ready to use Teams!'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 3,
-          title: 'Install Ipsos Apps',
-          description: 'Download and install the required Ipsos applications',
-          details: '''
-1. Open your web browser
-2. Navigate to the Ipsos app portal
-3. Download the iReach application
-4. Run the installer and follow the prompts
-5. Sign in with your credentials when prompted'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 4,
-          title: 'Sync to Android Showcard',
-          description: 'Connect your Android tablet for data synchronization',
-          details: '''
+    _InstructionData(
+        title: 'Open Ipsos Apps',
+        description: 'Review the Ipsos applications used by your project',
+        details: '''
+1. Open the Ipsos apps folder on your desktop
+2. Confirm iReach is available for your project work
+3. Open iReach and sign in with your interviewer account
+4. Check whether any project-specific shortcut is listed
+5. Keep Teams open if you need helpdesk guidance'''),
+    _InstructionData(
+        title: 'Sync to Android Showcard',
+        description: 'Connect your Android tablet for data synchronization',
+        details: '''
 1. Install the Ipsos Sync app on your Android tablet
 2. Open the app and note the device code
 3. On your laptop, open Ipsos Sync settings
 4. Enter the device code from your tablet
 5. Confirm the connection on both devices'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 5,
-          title: 'Helpdesk Contact',
-          description: 'Save the helpdesk contact information',
-          details: '''
+    _InstructionData(
+        title: 'Helpdesk Contact',
+        description: 'Save the helpdesk contact information',
+        details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
-    ]);
-  }
+  ];
 
-  Widget _buildAndroidInstructions() {
-    return const Column(children: [
-      SetupInstruction(
-          number: 1,
-          title: 'Connect to WiFi',
-          description: 'Connect your tablet to your home WiFi network',
-          details: '''
+  static const _androidInstructions = [
+    _InstructionData(
+        title: 'Connect to WiFi',
+        description: 'Connect your tablet to your home WiFi network',
+        details: '''
 1. Swipe down from the top to open Settings
 2. Tap "WiFi"
 3. Select your home network
 4. Enter the WiFi password
 5. Wait for connection confirmation'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 2,
-          title: 'Install Microsoft Teams',
-          description: 'Download Teams from Google Play Store',
-          details: '''
+    _InstructionData(
+        title: 'Install Microsoft Teams',
+        description: 'Download Teams from Google Play Store',
+        details: '''
 1. Open Google Play Store
 2. Search for "Microsoft Teams"
 3. Tap Install
 4. Once installed, tap Open
 5. Sign in with your work email'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 3,
-          title: 'Install Ipsos Apps',
-          description: 'Install the required Ipsos applications',
-          details: '''
-1. Open Google Play Store
-2. Search for "Ipsos iReach"
-3. Tap Install
-4. Once installed, open the app
-5. Sign in with your credentials'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 4,
-          title: 'Helpdesk Contact',
-          description: 'Save the helpdesk contact information',
-          details: '''
+    _InstructionData(
+        title: 'Open Ipsos Apps',
+        description: 'Confirm iReach and project apps are available',
+        details: '''
+1. Open the app drawer
+2. Locate iReach and any project-specific Ipsos apps
+3. Open iReach and sign in with your interviewer account
+4. Confirm the assigned project appears on the home screen
+5. Return to this portal after checking the apps'''),
+    _InstructionData(
+        title: 'Helpdesk Contact',
+        description: 'Save the helpdesk contact information',
+        details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
-    ]);
-  }
+  ];
 
-  Widget _buildIosInstructions() {
-    return const Column(children: [
-      SetupInstruction(
-          number: 1,
-          title: 'Connect to WiFi',
-          description: 'Connect your iPad to your home WiFi network',
-          details: '''
+  static const _iosInstructions = [
+    _InstructionData(
+        title: 'Connect to WiFi',
+        description: 'Connect your iPad to your home WiFi network',
+        details: '''
 1. Go to Settings
 2. Tap WiFi
 3. Select your home network
 4. Enter the WiFi password
 5. Wait for connection confirmation'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 2,
-          title: 'Install Microsoft Teams',
-          description: 'Download Teams from App Store',
-          details: '''
+    _InstructionData(
+        title: 'Install Microsoft Teams',
+        description: 'Download Teams from App Store',
+        details: '''
 1. Open App Store
 2. Search for "Microsoft Teams"
 3. Tap Get then Install
 4. Once installed, tap Open
 5. Sign in with your work email'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 3,
-          title: 'Install Ipsos Apps',
-          description: 'Install the required Ipsos applications',
-          details: '''
-1. Open App Store
-2. Search for "Ipsos iReach"
-3. Tap Get then Install
-4. Once installed, open the app
-5. Sign in with your credentials'''),
-      SizedBox(height: 16),
-      SetupInstruction(
-          number: 4,
-          title: 'Helpdesk Contact',
-          description: 'Save the helpdesk contact information',
-          details: '''
+    _InstructionData(
+        title: 'Open Ipsos Apps',
+        description: 'Confirm iReach and project apps are available',
+        details: '''
+1. Open the home screen
+2. Locate iReach and any project-specific Ipsos apps
+3. Open iReach and sign in with your interviewer account
+4. Confirm the assigned project appears on the home screen
+5. Return to this portal after checking the apps'''),
+    _InstructionData(
+        title: 'Helpdesk Contact',
+        description: 'Save the helpdesk contact information',
+        details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)'''),
-    ]);
-  }
+  ];
 
-  Widget _buildGenericInstructions(BuildContext context) {
-    return Column(children: [
-      Card(
-        color: Colors.orange.shade50,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(Icons.info, color: Colors.orange.shade700),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Device type could not be determined. Please contact helpdesk for assistance.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      const SizedBox(height: 16),
-      const SetupInstruction(
-        number: 1,
-        title: 'Contact Helpdesk',
-        description: 'Reach out for device-specific setup assistance',
-        details: '''
+  static const _genericInstructions = [
+    _InstructionData(
+      title: 'Contact Helpdesk',
+      description: 'Reach out for device-specific setup assistance',
+      details: '''
 Email: helpdesk@ipsos.com
 Phone: 1-800-IPSOS-HELP
 Hours: Monday-Friday, 8AM-6PM (Your Local Time)
 
 Please have your device ID ready when you contact us.''',
-      ),
-    ]);
+    ),
+  ];
+
+  void _showSupportSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Helpdesk',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline_rounded),
+                title: const Text('Start chat'),
+                subtitle: const Text('A chat widget can be connected here'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Chat support placeholder opened'),
+                    ),
+                  );
+                },
+              ),
+              const ListTile(
+                leading: Icon(Icons.email_outlined),
+                title: Text('helpdesk@ipsos.com'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.phone_outlined),
+                title: Text('1-800-IPSOS-HELP'),
+                subtitle: Text('Monday-Friday, 8AM-6PM local time'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
+}
+
+class _InstructionData {
+  const _InstructionData({
+    required this.title,
+    required this.description,
+    required this.details,
+  });
+
+  final String title;
+  final String description;
+  final String details;
 }

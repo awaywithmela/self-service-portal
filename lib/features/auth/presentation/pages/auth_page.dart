@@ -20,24 +20,27 @@ class AuthPage extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Please select your status to continue',
+                    'Scan the QR code on your Ipsos device package, then choose the option that matches you.',
                     style: Theme.of(context)
                         .textTheme
                         .bodyLarge
                         ?.copyWith(color: AppTheme.lightText),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 24),
+                  _buildQrHelpCard(context),
+                  const SizedBox(height: 28),
                   AuthButton(
                     label: 'New Interviewer',
-                    description: 'First time setup and device configuration',
+                    description:
+                        'Verify your details and open the setup knowledge guide',
                     icon: Icons.person_add_rounded,
                     onPressed: () => context.go('/new-interviewer'),
                   ),
                   const SizedBox(height: 20),
                   AuthButton(
                     label: 'Existing Interviewer',
-                    description: 'Update apps and manage your device',
+                    description: 'Sign in to update iReach or get support',
                     icon: Icons.manage_accounts_rounded,
                     onPressed: () => context.go('/existing-interviewer'),
                   ),
@@ -46,6 +49,36 @@ class AuthPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQrHelpCard(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                color: AppTheme.tealSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.tealMuted),
+              ),
+              child: const Icon(Icons.qr_code_2_rounded,
+                  color: AppTheme.tealDark, size: 36),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                'This portal is the self-help path normally handled during a helpdesk setup call: verify identity, enter the device ID, get PIN guidance, connect WiFi, open Teams, and start Ipsos apps.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -12,6 +12,7 @@ class DeviceRemoteDataSource implements DeviceDataSource {
     'WIN-001': (type: 'windows', name: 'Laptop-WIN-001'),
     'WIN-002': (type: 'windows', name: 'Laptop-WIN-002'),
     'LAP-ABC-12345': (type: 'windows', name: 'Laptop-LAP-ABC'),
+    'COMNUM1223': (type: 'windows', name: 'Ipsos-Windows-COMNUM1223'),
     'AND-001': (type: 'android', name: 'Tablet-AND-001'),
     'AND-002': (type: 'android', name: 'Tablet-AND-002'),
     'IOS-001': (type: 'ios', name: 'iPad-IOS-001'),
@@ -27,10 +28,12 @@ class DeviceRemoteDataSource implements DeviceDataSource {
 
     final device = _testDevices[deviceId.trim().toUpperCase()];
     if (device == null) {
-      throw Exception('Device ID "$deviceId" not found. Please check the ID and try again.');
+      throw Exception(
+          'Device ID "$deviceId" not found. Please check the ID and try again.');
     }
 
-    return DeviceModel(deviceId: deviceId, deviceType: device.type, deviceName: device.name);
+    return DeviceModel(
+        deviceId: deviceId, deviceType: device.type, deviceName: device.name);
   }
 
   @override

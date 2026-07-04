@@ -6,6 +6,8 @@ class SetupInstruction extends StatefulWidget {
   final String title;
   final String description;
   final String details;
+  final bool isComplete;
+  final ValueChanged<bool>? onCompleteChanged;
 
   const SetupInstruction({
     super.key,
@@ -13,6 +15,8 @@ class SetupInstruction extends StatefulWidget {
     required this.title,
     required this.description,
     required this.details,
+    this.isComplete = false,
+    this.onCompleteChanged,
   });
 
   @override
@@ -25,6 +29,7 @@ class _SetupInstructionState extends State<SetupInstruction> {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: widget.isComplete ? const Color(0xFFF3FBF6) : Colors.white,
       child: Column(
         children: [
           InkWell(
@@ -37,17 +42,25 @@ class _SetupInstructionState extends State<SetupInstruction> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryTeal.withValues(alpha: 0.12),
+                      color: widget.isComplete
+                          ? const Color(0xFF2E9D5C)
+                          : AppTheme.primaryTeal.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
-                      child: Text(
-                        '${widget.number}',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
+                      child: widget.isComplete
+                          ? const Icon(Icons.check_rounded,
+                              color: Colors.white, size: 28)
+                          : Text(
+                              '${widget.number}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -57,21 +70,37 @@ class _SetupInstructionState extends State<SetupInstruction> {
                       children: [
                         Text(
                           widget.title,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           widget.description,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: Theme.of(context).primaryColor,
-                    size: 32,
+                  Column(
+                    children: [
+                      Checkbox(
+                        value: widget.isComplete,
+                        onChanged: widget.onCompleteChanged == null
+                            ? null
+                            : (value) => widget.onCompleteChanged!(value!),
+                      ),
+                      Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                        color: Theme.of(context).primaryColor,
+                        size: 30,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -89,7 +118,7 @@ class _SetupInstructionState extends State<SetupInstruction> {
                   children: [
                     Text(
                       'Step-by-Step Instructions:',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).primaryColor,
                           ),
@@ -105,11 +134,26 @@ class _SetupInstructionState extends State<SetupInstruction> {
                       child: SelectableText(
                         widget.details.trim(),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontFamily: 'monospace',
                               height: 1.8,
                             ),
                       ),
                     ),
+                    if (widget.onCompleteChanged != null) ...[
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              widget.onCompleteChanged!(!widget.isComplete),
+                          icon: Icon(widget.isComplete
+                              ? Icons.undo_rounded
+                              : Icons.check_rounded),
+                          label: Text(widget.isComplete
+                              ? 'Mark as not done'
+                              : 'Mark step done'),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

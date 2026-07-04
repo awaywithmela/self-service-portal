@@ -17,12 +17,6 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
   bool _iReachClosed = false;
 
   @override
-  void initState() {
-    super.initState();
-    ref.listenManual(deviceNotifierProvider, (_, __) {});
-  }
-
-  @override
   void dispose() {
     _deviceIdController.dispose();
     ref.read(deviceNotifierProvider.notifier).reset();
@@ -104,12 +98,18 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
         ),
       ),
       body: PageContent(
+        maxWidth: 760,
         child: deviceState.updateStarted
             ? _buildUpdateSuccess(context,
                 deviceState.updateMessage ?? 'Update started successfully')
             : deviceState.isValidated
                 ? _buildUpdatePrompt(context)
                 : _buildDeviceEntry(context),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showSupportSheet(context),
+        icon: const Icon(Icons.support_agent_rounded),
+        label: const Text('Help'),
       ),
     );
   }
@@ -168,9 +168,33 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
   }
 
   Widget _buildUpdatePrompt(BuildContext context) {
+    final device = ref.watch(deviceNotifierProvider).device;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildUpdateProgress(context, 2),
+        const SizedBox(height: 24),
+        if (device != null) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Color(0xFF2E9D5C)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      '${device.deviceId} validated as ${device.type.displayName}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
         Card(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -215,10 +239,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
                         .titleLarge
                         ?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                _buildStep(
-                    context, 'Locate the iReach application on your device'),
+                _buildStep(context, 'Save or finish any active interviews'),
                 _buildStep(context, 'Close all iReach windows and dialogues'),
-                _buildStep(context, 'Make sure iReach is completely closed'),
+                _buildStep(context, 'Check the taskbar or recent apps list'),
                 _buildStep(context, 'Return here when done'),
               ],
             ),
@@ -248,6 +271,8 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildUpdateProgress(context, 3),
+        const SizedBox(height: 24),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(40),
@@ -314,8 +339,8 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
                 ),
                 const SizedBox(height: 20),
                 _buildStep(
-                    context, 'iReach will automatically close and update'),
-                _buildStep(context, 'Please do not turn off your device'),
+                    context, 'The remote management script has been requested'),
+                _buildStep(context, 'Please keep your device powered on'),
                 _buildStep(
                     context, 'Your device may restart during the process'),
                 _buildStep(
@@ -360,6 +385,101 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUpdateProgress(BuildContext context, int currentStep) {
+    const steps = [
+      'Validate device',
+      'Close iReach',
+      'Run update',
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            for (var i = 0; i < steps.length; i++) ...[
+              Expanded(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: i < currentStep
+                          ? const Color(0xFF2E9D5C)
+                          : Colors.grey.shade200,
+                      child: Icon(
+                        i < currentStep
+                            ? Icons.check_rounded
+                            : Icons.circle_outlined,
+                        color: i < currentStep
+                            ? Colors.white
+                            : Colors.grey.shade500,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      steps[i],
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: i < currentStep
+                                ? const Color(0xFF244646)
+                                : Colors.grey.shade600,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i != steps.length - 1)
+                Container(
+                  width: 28,
+                  height: 2,
+                  margin: const EdgeInsets.only(bottom: 28),
+                  color: i + 1 < currentStep
+                      ? const Color(0xFF2E9D5C)
+                      : Colors.grey.shade200,
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSupportSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Need help?',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              const ListTile(
+                leading: Icon(Icons.chat_bubble_outline_rounded),
+                title: Text('Chat with helpdesk'),
+                subtitle: Text('Connect the production chat widget here'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.email_outlined),
+                title: Text('helpdesk@ipsos.com'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.phone_outlined),
+                title: Text('1-800-IPSOS-HELP'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
