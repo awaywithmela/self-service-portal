@@ -136,8 +136,8 @@ When adding new features:
 
 For issues or questions:
 - Email: helpdesk@ipsos.com
-- Phone: 1-800-IPSOS-HELP
-- Hours: Monday-Friday, 8AM-6PM (Local Time)
+- Phone: 0800 478 783
+- Hours: 7 days, 9AM-8PM (Local Time)
 
 ## License
 
