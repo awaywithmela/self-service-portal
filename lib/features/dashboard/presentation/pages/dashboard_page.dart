@@ -67,19 +67,46 @@ class DashboardPage extends ConsumerWidget {
               title: 'Get Support',
               description: 'Contact helpdesk for assistance',
               icon: Icons.support_agent_rounded,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'Helpdesk: helpdesk@ipsos.com  |  1-800-IPSOS-HELP'),
-                    duration: Duration(seconds: 4),
-                  ),
-                );
-              },
+              onTap: () => _showSupportDialog(context),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Get Support'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Contact helpdesk for assistance.'),
+              SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.email_outlined),
+                title: Text('helpdesk@ipsos.com'),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.phone_outlined),
+                title: Text('1-800-IPSOS-HELP'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -26,12 +26,9 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
   }
 
   Future<void> _validateDevice() async {
-    if (_deviceIdController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a device ID')),
-      );
-      return;
-    }
+    final deviceId = _deviceIdController.text.trim().isEmpty
+        ? 'WIN-001'
+        : _deviceIdController.text;
 
     showDialog(
       context: context,
@@ -41,7 +38,7 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
 
     final success = await ref
         .read(deviceNotifierProvider.notifier)
-        .validateDevice(_deviceIdController.text);
+        .validateDevice(deviceId);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -245,12 +242,10 @@ class _DeviceSetupPageState extends ConsumerState<DeviceSetupPage> {
         }),
         const SizedBox(height: 32),
         ElevatedButton.icon(
-          onPressed: canComplete
-              ? () {
-                  ref.read(deviceNotifierProvider.notifier).reset();
-                  context.go('/auth');
-                }
-              : null,
+          onPressed: () {
+            ref.read(deviceNotifierProvider.notifier).reset();
+            context.go('/auth');
+          },
           icon: const Icon(Icons.check),
           label: Text(canComplete
               ? 'Setup Complete'

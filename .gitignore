@@ -1,0 +1,15 @@
+.DS_Store
+
+# Dart and Flutter generated files
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# IDE files
+.idea/
+.vscode/
+
+# Generated web build archives
+*.zip

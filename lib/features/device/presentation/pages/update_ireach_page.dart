@@ -24,12 +24,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
   }
 
   Future<void> _validateDevice() async {
-    if (_deviceIdController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a device ID')),
-      );
-      return;
-    }
+    final deviceId = _deviceIdController.text.trim().isEmpty
+        ? 'WIN-001'
+        : _deviceIdController.text;
 
     showDialog(
       context: context,
@@ -39,7 +36,7 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
 
     final success = await ref
         .read(deviceNotifierProvider.notifier)
-        .validateDevice(_deviceIdController.text);
+        .validateDevice(deviceId);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -53,13 +50,9 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
   }
 
   Future<void> _executeUpdate() async {
-    if (!_iReachClosed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please confirm iReach is closed before proceeding')),
-      );
-      return;
-    }
+    final deviceId = _deviceIdController.text.trim().isEmpty
+        ? 'WIN-001'
+        : _deviceIdController.text;
 
     showDialog(
       context: context,
@@ -69,7 +62,7 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
 
     final success = await ref
         .read(deviceNotifierProvider.notifier)
-        .executeIReachUpdate(_deviceIdController.text);
+        .executeIReachUpdate(deviceId);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -259,7 +252,7 @@ class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
         ),
         const SizedBox(height: 32),
         ElevatedButton.icon(
-          onPressed: _iReachClosed ? _executeUpdate : null,
+          onPressed: _executeUpdate,
           icon: const Icon(Icons.play_arrow, size: 24),
           label: const Text('Start Update'),
         ),
