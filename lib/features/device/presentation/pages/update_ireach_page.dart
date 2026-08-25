@@ -1,892 +1,420 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme.dart';
+
 import '../../../../core/widgets/page_content.dart';
 import '../../../auth/presentation/providers/auth_notifier.dart';
-import '../providers/device_notifier.dart';
+import '../../data/ireach/ireach_service.dart';
+import '../../domain/repositories/device_repository.dart';
+import '../cubit/update_ireach_cubit.dart';
+import '../cubit/update_ireach_state.dart';
+import '../providers/device_providers.dart';
 
-class UpdateIReachPage extends ConsumerStatefulWidget {
-  const UpdateIReachPage({super.key});
+class UpdateIReachPage extends ConsumerWidget {
+  final IreachService? service;
+  final DeviceRepository? deviceRepository;
+
+  const UpdateIReachPage({super.key, this.service, this.deviceRepository});
 
   @override
-  ConsumerState<UpdateIReachPage> createState() => _UpdateIReachPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).user;
+    return BlocProvider(
+      create: (_) => UpdateIreachCubit(
+        service: service,
+        deviceRepository:
+            deviceRepository ?? ref.read(deviceRepositoryProvider),
+        seedToken: user?.sessionToken,
+        seedComputerNumber: user?.deviceId,
+        seedName: user?.displayName,
+      ),
+      child: const _UpdateIReachView(),
+    );
+  }
 }
 
-class _UpdateIReachPageState extends ConsumerState<UpdateIReachPage> {
-  bool _isReadyForUpdate = false;
-
-  void _confirmComputerName() {
-    final deviceId = ref.read(authNotifierProvider).user?.deviceId;
-    if (deviceId == null || deviceId.trim().isEmpty) {
-      _showMissingComputerNameMessage();
-      return;
-    }
-
-    ref
-        .read(deviceNotifierProvider.notifier)
-        .confirmAssignedDevice(deviceId.trim());
-  }
-
-  Future<void> _startUpdateWithConfirmation() async {
-    if (!_isReadyForUpdate) {
-      return;
-    }
-
-    final confirmed = await _showSafetyDialog(
-      title: 'Start I-Reach Update?',
-      icon: Icons.system_update_alt_rounded,
-      iconColor: AppTheme.tealDark,
-      message:
-          'The update will be sent to your confirmed device. Keep the device powered on and do not reopen I-Reach until the update finishes.',
-      checklist: const [
-        'I-Reach has been synchronized.',
-        'I-Reach is fully closed.',
-        'I am ready to update this assigned device.',
-      ],
-      confirmLabel: 'Start Update',
-    );
-
-    if (confirmed) {
-      await _executeUpdate();
-    }
-  }
-
-  Future<void> _executeUpdate() async {
-    final user = ref.read(authNotifierProvider).user;
-    final deviceId = user?.deviceId;
-    final sessionToken = user?.sessionToken;
-    if (deviceId == null || deviceId.trim().isEmpty) {
-      _showMissingComputerNameMessage();
-      return;
-    }
-    if (sessionToken == null || sessionToken.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your session has expired. Please log in again.'),
-        ),
-      );
-      return;
-    }
-
-    final success = await ref
-        .read(deviceNotifierProvider.notifier)
-        .executeIReachUpdate(deviceId.trim(), sessionToken);
-
-    if (mounted) {
-      if (!success) {
-        final error = ref.read(deviceNotifierProvider).error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Update failed')),
-        );
-      }
-    }
-  }
+class _UpdateIReachView extends StatelessWidget {
+  const _UpdateIReachView();
 
   @override
   Widget build(BuildContext context) {
-    final deviceState = ref.watch(deviceNotifierProvider);
-    final user = ref.watch(authNotifierProvider).user;
-    final deviceId = user?.deviceId;
-
-    return PopScope(
-      canPop: !deviceState.isUpdating,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && deviceState.isUpdating) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please wait while the update request is running.'),
+    return BlocBuilder<UpdateIreachCubit, UpdateIreachState>(
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Update I-Reach application'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: state.currentStep == UpdateIreachStep.login
+                  ? () => context.go('/existing-interviewer')
+                  : state.isLoading
+                      ? null
+                      : state.currentStep == UpdateIreachStep.syncAndClose
+                          ? () => context
+                              .read<UpdateIreachCubit>()
+                              .backToDeviceConfirmation()
+                          : () => context.go(
+                                '/existing-interviewer-dashboard',
+                              ),
             ),
-          );
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Update I-Reach Application'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: deviceState.isUpdating
-                ? null
-                : () {
-                    ref.read(deviceNotifierProvider.notifier).reset();
-                    context.go('/existing-interviewer-dashboard');
-                  },
           ),
-        ),
-        body: PageContent(
-          maxWidth: 760,
-          child: deviceState.isUpdating
-              ? _buildUpdating(context)
-              : deviceState.updateStarted
-                  ? _buildUpdateSuccess(
-                      context,
-                      deviceState.updateMessage ??
-                          'I-Reach has been updated. You can now reopen it.',
-                    )
-                  : deviceState.error != null
-                      ? _buildUpdateFailure(context, deviceState.error!)
-                      : deviceState.isValidated
-                          ? _buildUpdatePrompt(context)
-                          : _buildComputerConfirmation(context, deviceId),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showSupportSheet(context),
-          icon: const Icon(Icons.support_agent_rounded),
-          label: const Text('Help'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildComputerConfirmation(
-    BuildContext context,
-    String? deviceId,
-  ) {
-    final hasComputerName = deviceId != null && deviceId.trim().isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          child: Padding(
+          body: PageContent(
+            maxWidth: 760,
             padding: const EdgeInsets.all(28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.system_update,
-                        size: 36, color: Theme.of(context).primaryColor),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Update I-Reach Application',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  hasComputerName
-                      ? 'Please confirm that your device ID is ${deviceId.trim()} by clicking Continue.\n\nIf this is not your current device, please contact the Help Desk for assistance.'
-                      : 'Your interviewer record does not include a device ID. Please contact the Help Desk for assistance.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 48),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Retrieved Device ID',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.devices_rounded, size: 30),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        hasComputerName
-                            ? deviceId.trim()
-                            : 'No device ID found',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  hasComputerName
-                      ? 'This device ID was retrieved from your interviewer profile.'
-                      : 'The update cannot continue until a device ID is available.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 48),
-        if (hasComputerName) ...[
-          ElevatedButton.icon(
-            onPressed: _confirmComputerName,
-            icon: const Icon(Icons.check_circle_outline, size: 24),
-            label: const Text('Continue'),
-          ),
-          const SizedBox(height: 16),
-        ],
-        OutlinedButton.icon(
-          onPressed: () => context.go('/existing-interviewer-dashboard'),
-          icon: const Icon(Icons.arrow_back_rounded, size: 24),
-          label: const Text('Back'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpdatePrompt(BuildContext context) {
-    final device = ref.watch(deviceNotifierProvider).device;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildUpdateProgress(context, 2),
-        const SizedBox(height: 24),
-        if (device != null) ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_rounded, color: Color(0xFF2E9D5C)),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Confirmed device ID: ${device.deviceId}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-        _buildSyncWarningCard(context),
-        const SizedBox(height: 24),
-        _buildInstructionTimeline(context),
-        const SizedBox(height: 24),
-        _buildConfirmationPanel(context),
-        const SizedBox(height: 32),
-        ElevatedButton.icon(
-          onPressed: _isReadyForUpdate ? _startUpdateWithConfirmation : null,
-          icon: const Icon(Icons.play_arrow, size: 24),
-          label: const Text('Start Update'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSyncWarningCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7E8),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0C36A), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFB26A00).withValues(alpha: 0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE3AA),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: Color(0xFFB26A00),
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Before Updating I-Reach',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: const Color(0xFF8A5200),
-                      ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Failure to sync may result in unsaved offline work being lost. Complete the checklist below before starting the update.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInstructionTimeline(BuildContext context) {
-    const steps = [
-      (
-        'Sync I-Reach',
-        'Open I-Reach, click Sync, and wait for synchronization to finish. This saves all work from your device to the server.'
-      ),
-      (
-        'Close I-Reach',
-        'Close I-Reach completely before continuing. The updater cannot safely run while the application is open.'
-      ),
-    ];
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Before you update',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 22),
-            for (var index = 0; index < steps.length; index++)
-              _buildTimelineStep(
-                context,
-                index + 1,
-                steps[index].$1,
-                steps[index].$2,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimelineStep(
-    BuildContext context,
-    int number,
-    String title,
-    String description,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppTheme.tealSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.tealMuted),
-            ),
-            child: Text(
-              '$number',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.tealDark,
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmationPanel(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color:
-              _isReadyForUpdate ? const Color(0xFF7BC99B) : AppTheme.tealMuted,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _isReadyForUpdate
-                    ? Icons.verified_rounded
-                    : Icons.fact_check_outlined,
-                color: _isReadyForUpdate
-                    ? const Color(0xFF2E9D5C)
-                    : AppTheme.tealDark,
-                size: 30,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Required Confirmation',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          CheckboxListTile(
-            value: _isReadyForUpdate,
-            onChanged: (value) =>
-                setState(() => _isReadyForUpdate = value ?? false),
-            controlAffinity: ListTileControlAffinity.leading,
-            title: const Text(
-              'I have synced and closed I-Reach and I am ready for the update.',
-            ),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpdating(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildUpdateProgress(context, 3),
-        const SizedBox(height: 24),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(40),
-            child: Column(
-              children: [
-                const SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: CircularProgressIndicator(strokeWidth: 5),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Updating I-Reach',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Please keep this page open while the update request is running.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpdateSuccess(BuildContext context, String message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildUpdateProgress(context, 3),
-        const SizedBox(height: 24),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(40),
-            child: Column(
-              children: [
-                Icon(Icons.check_circle_outline,
-                    color: Colors.green.shade600, size: 80),
-                const SizedBox(height: 24),
-                Text(
-                  'I-Reach has been updated',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: Colors.green.shade600),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(message,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.shade200, width: 2),
-                  ),
-                  child: Text(
-                    'You can now reopen I-Reach.',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.bold,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 40),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 32, color: Theme.of(context).primaryColor),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'What to do next',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildStep(
-                    context, 'Reopen I-Reach when you are ready to continue.'),
-                _buildStep(
-                    context, 'Contact the Help Desk if anything looks wrong.'),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 40),
-        ElevatedButton.icon(
-          onPressed: () {
-            ref.read(deviceNotifierProvider.notifier).reset();
-            context.go('/existing-interviewer-dashboard');
-          },
-          icon: const Icon(Icons.home, size: 24),
-          label: const Text('Return to Dashboard'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpdateFailure(BuildContext context, String message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildUpdateProgress(context, 3),
-        const SizedBox(height: 24),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(40),
-            child: Column(
-              children: [
-                Icon(Icons.error_outline_rounded,
-                    color: Colors.red.shade600, size: 72),
-                const SizedBox(height: 20),
-                Text(
-                  'The update could not be completed',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: Colors.red.shade600),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 32),
-        ElevatedButton.icon(
-          onPressed: () {
-            ref.read(deviceNotifierProvider.notifier).reset();
-            context.go('/existing-interviewer-dashboard');
-          },
-          icon: const Icon(Icons.home_rounded, size: 22),
-          label: const Text('Return to Dashboard'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(8)),
-            child: Icon(Icons.check, size: 20, color: Colors.green.shade700),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(text, style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpdateProgress(BuildContext context, int currentStep) {
-    const steps = [
-      'Confirm device',
-      'Prepare I-Reach',
-      'Update',
-    ];
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            for (var i = 0; i < steps.length; i++) ...[
-              Expanded(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: i < currentStep
-                          ? const Color(0xFF2E9D5C)
-                          : Colors.grey.shade200,
-                      child: Icon(
-                        i < currentStep
-                            ? Icons.check_rounded
-                            : Icons.circle_outlined,
-                        color: i < currentStep
-                            ? Colors.white
-                            : Colors.grey.shade500,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      steps[i],
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: i < currentStep
-                                ? const Color(0xFF244646)
-                                : Colors.grey.shade600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              if (i != steps.length - 1)
-                Container(
-                  width: 28,
-                  height: 2,
-                  margin: const EdgeInsets.only(bottom: 28),
-                  color: i + 1 < currentStep
-                      ? const Color(0xFF2E9D5C)
-                      : Colors.grey.shade200,
-                ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<bool> _showSafetyDialog({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required String message,
-    required List<String> checklist,
-    required String confirmLabel,
-    bool showCancel = true,
-  }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.all(26),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          color: iconColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Icon(icon, color: iconColor, size: 34),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              message,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceWhite,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.tealMuted),
-                    ),
-                    child: Column(
-                      children: [
-                        for (final item in checklist)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle_outline_rounded,
-                                  color: AppTheme.tealDark,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (showCancel) ...[
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: const Text('Not Yet'),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    icon: const Icon(Icons.check_rounded),
-                    label: Text(confirmLabel),
-                  ),
-                ],
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: _buildStep(context, state),
             ),
           ),
         );
       },
     );
-
-    return result ?? false;
   }
 
-  void _showSupportSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+  Widget _buildStep(BuildContext context, UpdateIreachState state) {
+    if (state.currentStep == UpdateIreachStep.login) {
+      return const _SessionRequiredStep(key: ValueKey('session-required'));
+    }
+    if (state.currentStep == UpdateIreachStep.confirmDevice) {
+      return _ConfirmDeviceStep(key: const ValueKey('confirm'), state: state);
+    }
+    if (state.currentStep == UpdateIreachStep.syncAndClose) {
+      return _SyncCloseStep(key: const ValueKey('sync'), state: state);
+    }
+    return _ResultStep(key: const ValueKey('result'), state: state);
+  }
+}
+
+class _SessionRequiredStep extends StatelessWidget {
+  const _SessionRequiredStep({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header('Update I-Reach application'),
+        const SizedBox(height: 20),
+        _card(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Need help?',
-                  style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              const ListTile(
-                leading: Icon(Icons.chat_bubble_outline_rounded),
-                title: Text('Chat with helpdesk'),
-                subtitle: Text('Connect the production chat widget here'),
+              const Text(
+                'Your session has expired. Please sign in again to continue.',
               ),
-              const ListTile(
-                leading: Icon(Icons.email_outlined),
-                title: Text('helpdesk@ipsos.com'),
-              ),
-              const ListTile(
-                leading: Icon(Icons.phone_outlined),
-                title: Text('1-800-IPSOS-HELP'),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.go('/existing-interviewer'),
+                child: const Text('Return to sign in'),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  void _showMissingComputerNameMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'No computer name was found on your user record. Please contact Helpdesk for assistance.',
         ),
-      ),
+      ],
     );
   }
 }
+
+class _ConfirmDeviceStep extends StatelessWidget {
+  const _ConfirmDeviceStep({super.key, required this.state});
+  final UpdateIreachState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header('Update I-Reach application'),
+        const SizedBox(height: 20),
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please confirm that your device ID is ${state.computerNumber} by clicking Continue. If this is not your current device, please contact help desk.',
+                textAlign: TextAlign.left,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              _readOnlyRow(
+                  'Computer Number', state.computerNumber ?? 'Unknown'),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () =>
+                        context.go('/existing-interviewer-dashboard'),
+                    child: const Text('Return to Home'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () =>
+                        context.read<UpdateIreachCubit>().confirmDevice(),
+                    child: const Text('Continue'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SyncCloseStep extends StatelessWidget {
+  const _SyncCloseStep({super.key, required this.state});
+  final UpdateIreachState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final loading = state.isLoading;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header('Update I-Reach application'),
+        const SizedBox(height: 20),
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Follow these steps:',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              const _ChecklistInstruction(
+                number: '1',
+                title: 'Sync I-Reach',
+                description: 'Save your latest work to the server.',
+              ),
+              const SizedBox(height: 12),
+              const _ChecklistInstruction(
+                number: '2',
+                title: 'Close I-Reach',
+                description: 'Make sure the application is fully closed.',
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Transform.translate(
+                      offset: const Offset(0, -6),
+                      child: Checkbox(
+                        value: state.syncedAndClosed,
+                        onChanged: loading
+                            ? null
+                            : (value) {
+                                if (value != true) {
+                                  context
+                                      .read<UpdateIreachCubit>()
+                                      .setSyncedAndClosed(false);
+                                  return;
+                                }
+                                _confirmIreachClosed(context);
+                              },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'I have synced and closed I-Reach and am ready for update',
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (state.errorMessage != null) _error(state.errorMessage!),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: loading
+                        ? null
+                        : () => context
+                            .read<UpdateIreachCubit>()
+                            .backToDeviceConfirmation(),
+                    child: const Text('Back'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: state.deviceConfirmed &&
+                            state.syncedAndClosed &&
+                            !loading
+                        ? () => context.read<UpdateIreachCubit>().startUpdate()
+                        : null,
+                    child: Text(loading ? 'Starting...' : 'Start Update'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmIreachClosed(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded),
+        title: const Text('Double-check I-Reach is closed'),
+        content: const Text(
+          'Please make sure I-Reach is fully closed and your latest work has been synced before continuing the update.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Yes, it is closed'),
+          ),
+        ],
+      ),
+    );
+
+    if (!context.mounted || confirmed != true) return;
+    context.read<UpdateIreachCubit>().setSyncedAndClosed(true);
+  }
+}
+
+class _ResultStep extends StatelessWidget {
+  const _ResultStep({super.key, required this.state});
+  final UpdateIreachState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = state.status == UpdateIreachStatus.loading;
+    final isSuccess = state.status == UpdateIreachStatus.success;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _header('Update I-Reach application'),
+        const SizedBox(height: 20),
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isLoading) ...[
+                const LinearProgressIndicator(),
+                const SizedBox(height: 20),
+              ],
+              Text(
+                isLoading
+                    ? 'Starting the I-Reach update...'
+                    : isSuccess
+                        ? 'I-Reach update triggered.'
+                        : (state.errorMessage ??
+                            'I-Reach update failed. Please contact help desk.'),
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.left,
+              ),
+              const SizedBox(height: 16),
+              if (isLoading)
+                const Text(
+                  'This may take up to two minutes. Please keep this page open.',
+                )
+              else if (!isSuccess)
+                const Text('Please contact help desk.'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () =>
+                        context.go('/existing-interviewer-dashboard'),
+                    child: const Text('Return to Home'),
+                  ),
+                  const SizedBox(width: 12),
+                  if (!isSuccess && !isLoading)
+                    ElevatedButton(
+                      onPressed: state.isLoading
+                          ? null
+                          : () =>
+                              context.read<UpdateIreachCubit>().retryUpdate(),
+                      child: const Text('Retry'),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChecklistInstruction extends StatelessWidget {
+  const _ChecklistInstruction({
+    required this.number,
+    required this.title,
+    required this.description,
+  });
+
+  final String number;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 16,
+          child: Text(number),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 2),
+              Text(description),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Widget _header(String title) => Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+      ),
+    );
+
+Widget _card({required Widget child}) => Card(
+      child: Padding(padding: const EdgeInsets.all(24), child: child),
+    );
+
+Widget _error(String message) => Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE57373)),
+      ),
+      child: Text(message, style: const TextStyle(color: Color(0xFF8A1F1F))),
+    );
+
+Widget _readOnlyRow(String label, String value) => Row(
+      children: [
+        Expanded(
+            child: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.w700))),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+      ],
+    );

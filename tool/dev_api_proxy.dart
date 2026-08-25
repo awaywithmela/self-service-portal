@@ -62,6 +62,11 @@ Future<void> _handleRequest(HttpRequest request, Uri target) async {
     return;
   }
 
+  if (request.uri.path == '/api/v1/Users/GetCurrentUserData') {
+    await _handleExistingInterviewerCurrentUser(request, target);
+    return;
+  }
+
   if (request.uri.path == '/api/v1/Users') {
     await _handleExistingInterviewerProfile(request, target);
     return;
@@ -154,18 +159,36 @@ Future<void> _handleExistingInterviewerAuthentication(
         'password': password,
       }));
       final incoming = await outgoing.close();
-      final responseBody = await utf8.decoder.bind(incoming).join();
-      final decoded = jsonDecode(responseBody);
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('The authentication response was invalid.');
-      }
+      final responseBody = (await utf8.decoder.bind(incoming).join()).trim();
       if (incoming.statusCode >= 200 && incoming.statusCode < 300) {
-        final session = _extractBoSessionToken(decoded);
-        if (session != null && session.isNotEmpty) {
-          _smsSessionUsers[session] = username;
+        final session = _extractSessionToken(responseBody);
+        if (session == null || session.isEmpty) {
+          // Upstream returned 2xx with a failure payload (e.g. bad credentials
+          // wrapped in {"code": -101, ...}). Forward it as-is so the client's
+          // own parser surfaces the real error instead of a fake session.
+          await _writeText(
+            request.response,
+            incoming.statusCode,
+            responseBody,
+            contentType: ContentType('text', 'plain'),
+          );
+          return;
         }
+        _smsSessionUsers[session] = username;
+        await _writeText(
+          request.response,
+          incoming.statusCode,
+          session,
+          contentType: ContentType('text', 'plain'),
+        );
+      } else {
+        await _writeText(
+          request.response,
+          incoming.statusCode,
+          responseBody,
+          contentType: ContentType('text', 'plain'),
+        );
       }
-      await _writeJson(request.response, incoming.statusCode, decoded);
     } finally {
       client.close(force: true);
     }
@@ -176,6 +199,102 @@ Future<void> _handleExistingInterviewerAuthentication(
       {'error': 'Authentication could not be completed.'},
     );
   }
+}
+
+Future<void> _handleExistingInterviewerCurrentUser(
+  HttpRequest request,
+  Uri target,
+) async {
+  if (request.method != 'GET') {
+    await _writeJson(
+      request.response,
+      HttpStatus.methodNotAllowed,
+      {'error': 'Only GET is supported for current-user data.'},
+    );
+    return;
+  }
+
+  final session = request.headers.value('sm-authorize');
+  if (session == null || !_smsSessionUsers.containsKey(session)) {
+    await _writeJson(
+      request.response,
+      HttpStatus.unauthorized,
+      {'error': 'The interviewer session has expired. Please log in again.'},
+    );
+    return;
+  }
+
+  final client = HttpClient();
+  try {
+    final uri = target.replace(
+      path: _joinPaths(target.path, request.uri.path),
+      query: request.uri.query,
+    );
+    final outgoing = await client.getUrl(uri);
+    outgoing.headers
+      ..set(HttpHeaders.acceptHeader, 'text/plain')
+      ..set('sm-authorize', session);
+    final incoming = await outgoing.close();
+    final responseBody = await utf8.decoder.bind(incoming).join();
+    if (incoming.statusCode < 200 || incoming.statusCode >= 300) {
+      await _writeText(
+        request.response,
+        incoming.statusCode,
+        responseBody,
+        contentType: ContentType.json,
+      );
+      return;
+    }
+
+    final decoded = jsonDecode(responseBody);
+    final computerNumber = _extractComputerNumber(decoded);
+    if (computerNumber != null) {
+      _smsSessionComputers[session] = computerNumber;
+    }
+    await _writeText(
+      request.response,
+      incoming.statusCode,
+      responseBody,
+      contentType: ContentType.json,
+    );
+  } catch (_) {
+    await _writeJson(
+      request.response,
+      HttpStatus.badGateway,
+      {'error': 'The interviewer profile could not be retrieved.'},
+    );
+  } finally {
+    client.close(force: true);
+  }
+}
+
+String? _extractComputerNumber(dynamic data) {
+  final records = <Map<String, dynamic>>[];
+  void collect(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      records.add(value);
+      collect(value['data']);
+      collect(value['user']);
+      collect(value['result']);
+    } else if (value is List) {
+      for (final item in value) {
+        collect(item);
+      }
+    }
+  }
+
+  collect(data);
+  for (final record in records) {
+    for (final key in const [
+      'computerNumber',
+      'computer_number',
+      'computerName'
+    ]) {
+      final value = record[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value.toUpperCase();
+    }
+  }
+  return null;
 }
 
 Future<void> _handleExistingInterviewerProfile(
@@ -928,6 +1047,70 @@ String? _firstTextValue(Map<String, dynamic> source, List<String> keys) {
   return null;
 }
 
+String _stripSurroundingQuotes(String value) {
+  if (value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'")))) {
+    return value.substring(1, value.length - 1).trim();
+  }
+  return value;
+}
+
+/// Mirrors IreachService._extractToken on the client: the SM API returns
+/// either a bare (possibly quoted) session string, or a JSON envelope with
+/// the real token nested inside. The stored/forwarded session must match
+/// exactly what the client will end up sending back in `sm-authorize`, so
+/// this has to unwrap the same envelope shapes the client unwraps.
+/// Returns null when the body is a JSON failure payload (non-zero `code` or
+/// no session field found) rather than a real token.
+String? _extractSessionToken(String rawBody) {
+  final trimmed = rawBody.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+
+      final code = decoded['code'];
+      if (code != null && code != 0) {
+        return null;
+      }
+
+      final data = decoded['data'];
+      if (data is Map<String, dynamic>) {
+        final session =
+            data['session'] ?? data['token'] ?? data['sessionId'] ?? data['auth_token'];
+        final sessionStr = session?.toString().trim();
+        if (sessionStr != null && sessionStr.isNotEmpty) {
+          return sessionStr;
+        }
+      } else if (data is String && data.trim().isNotEmpty) {
+        return data.trim();
+      }
+
+      final topSession = decoded['session'] ??
+          decoded['token'] ??
+          decoded['sessionId'] ??
+          decoded['auth_token'];
+      final topSessionStr = topSession?.toString().trim();
+      if (topSessionStr != null && topSessionStr.isNotEmpty) {
+        return topSessionStr;
+      }
+      return null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  final token = _stripSurroundingQuotes(trimmed);
+  return token.isEmpty ? null : token;
+}
+
 bool _matchesLastFourDigits(String? phoneNumber, String expectedLastFour) {
   if (phoneNumber == null) {
     return false;
@@ -944,6 +1127,18 @@ Future<void> _writeJson(
   response.statusCode = statusCode;
   response.headers.contentType = ContentType.json;
   response.write(jsonEncode(body));
+  await response.close();
+}
+
+Future<void> _writeText(
+  HttpResponse response,
+  int statusCode,
+  String body, {
+  required ContentType contentType,
+}) async {
+  response.statusCode = statusCode;
+  response.headers.contentType = contentType;
+  response.write(body);
   await response.close();
 }
 

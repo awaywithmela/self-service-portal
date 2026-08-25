@@ -1,202 +1,364 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../../auth/presentation/providers/auth_notifier.dart';
+
 import '../../../../app/theme.dart';
 import '../../../../core/widgets/page_content.dart';
+import '../../../auth/presentation/providers/auth_notifier.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
+    final user = ref.watch(authNotifierProvider).user;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Interviewer dashboard'),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded, size: 26),
-            tooltip: 'Logout',
-            onPressed: () {
-              ref.read(authNotifierProvider.notifier).logout();
-              context.go('/auth');
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed: () {
+                ref.read(authNotifierProvider.notifier).logout();
+                context.go('/auth');
+              },
+              icon: const Icon(Icons.logout_rounded, size: 20),
+              label: const Text('Sign out'),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: PageContent(
-        padding: const EdgeInsets.all(28),
+        maxWidth: 1080,
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildWelcomeCard(context, authState.user?.displayName),
-            const SizedBox(height: 36),
+            _WelcomePanel(
+              name: user?.displayName,
+              deviceId: user?.deviceId,
+            ),
+            const SizedBox(height: 30),
             Text(
-              'What would you like to do?',
-              style: Theme.of(context).textTheme.headlineSmall,
+              'Self-service tools',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppTheme.darkText,
+                  ),
             ),
-            const SizedBox(height: 20),
-            _buildActionCard(
-              context,
-              title: 'Update I-Reach',
-              description: 'Confirm your device and run the update checklist',
-              icon: Icons.system_update_alt_rounded,
-              onTap: () => context.go('/update-ireach'),
+            const SizedBox(height: 6),
+            Text(
+              'Choose what you need help with today.',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
-            _buildActionCard(
-              context,
-              title: 'Knowledge Base',
-              description: 'Guides for sync, updates, and connectivity',
-              icon: Icons.menu_book_rounded,
-              onTap: () => context.go('/knowledge-base'),
-            ),
-            const SizedBox(height: 16),
-            _buildActionCard(
-              context,
-              title: 'Create Support Ticket',
-              description: 'Send a Help Desk request with your details',
-              icon: Icons.support_agent_rounded,
-              onTap: () => context.go('/support-ticket'),
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 840 ? 3 : 1;
+                final width = columns == 3
+                    ? (constraints.maxWidth - 32) / 3
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _DashboardAction(
+                      width: width,
+                      featured: true,
+                      title: 'Update I-Reach',
+                      description:
+                          'Confirm this device and run the update checklist.',
+                      icon: Icons.system_update_alt_rounded,
+                      actionLabel: 'Start update',
+                      onTap: () => context.go('/update-ireach'),
+                    ),
+                    _DashboardAction(
+                      width: width,
+                      title: 'Knowledge Base',
+                      description:
+                          'Find guidance for sync, updates, and connectivity.',
+                      icon: Icons.menu_book_rounded,
+                      actionLabel: 'Browse guides',
+                      onTap: () => context.go('/knowledge-base'),
+                    ),
+                    _DashboardAction(
+                      width: width,
+                      title: 'Help Desk',
+                      description:
+                          'Create a support request with your account context.',
+                      icon: Icons.support_agent_rounded,
+                      actionLabel: 'Get support',
+                      onTap: () => context.go('/support-ticket'),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildWelcomeCard(BuildContext context, String? displayName) {
-    final surveyorName = displayName?.trim();
+class _WelcomePanel extends StatelessWidget {
+  const _WelcomePanel({required this.name, required this.deviceId});
+
+  final String? name;
+  final String? deviceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleanName = name?.trim();
+    final cleanDevice = deviceId?.trim();
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.tealDark, AppTheme.primaryTeal],
+          colors: [AppTheme.tealDark, Color(0xFF176D72)],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryTeal.withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: AppTheme.tealDark.withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 620;
+          final greeting = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'SIGNED IN',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppTheme.tealLight,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.4,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                cleanName == null || cleanName.isEmpty
+                    ? 'Welcome back'
+                    : 'Welcome back, $cleanName',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontSize: 27,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Your interviewer tools are ready.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.78),
+                    ),
+              ),
+            ],
+          );
+          final device = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+              ),
             ),
-            child: const Icon(Icons.sentiment_satisfied_alt_rounded,
-                size: 36, color: Colors.white),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.laptop_windows_rounded,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assigned device',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                    ),
+                    Text(
+                      cleanDevice == null || cleanDevice.isEmpty
+                          ? 'Not available'
+                          : cleanDevice,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [greeting, const SizedBox(height: 22), device],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: greeting),
+              const SizedBox(width: 24),
+              device,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DashboardAction extends StatelessWidget {
+  const _DashboardAction({
+    required this.width,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.actionLabel,
+    required this.onTap,
+    this.featured = false,
+  });
+
+  final double width;
+  final String title;
+  final String description;
+  final IconData icon;
+  final String actionLabel;
+  final VoidCallback onTap;
+  final bool featured;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 290,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: featured ? AppTheme.primaryTeal : AppTheme.tealMuted,
+                width: featured ? 2 : 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.tealDark.withValues(alpha: 0.06),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  surveyorName == null || surveyorName.isEmpty
-                      ? 'Welcome back'
-                      : 'Welcome back,\n$surveyorName',
-                  style: GoogleFonts.nunito(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color:
+                        featured ? AppTheme.primaryTeal : AppTheme.tealSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: featured
+                          ? Colors.white.withValues(alpha: 0.22)
+                          : AppTheme.tealMuted,
+                    ),
                   ),
+                  child: title == 'Knowledge Base'
+                      ? const CustomPaint(
+                          size: Size.square(30),
+                          painter: _KnowledgeBaseIconPainter(),
+                        )
+                      : Icon(
+                          icon,
+                          color: featured ? Colors.white : AppTheme.tealDark,
+                          size: 30,
+                        ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Ready to continue?',
-                  style: GoogleFonts.nunito(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
+                const SizedBox(height: 18),
+                Text(title, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(description,
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const Spacer(),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Text(
+                      actionLabel,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: AppTheme.tealDark,
+                            fontSize: 15,
+                          ),
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppTheme.tealDark,
+                      size: 20,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required IconData icon,
-    VoidCallback? onTap,
-  }) {
-    final isEnabled = onTap != null;
-    return Material(
-      color: isEnabled ? Colors.white : Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 22),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.tealMuted, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryTeal.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color:
-                      isEnabled ? AppTheme.primaryTeal : Colors.grey.shade500,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: isEnabled ? null : Colors.grey.shade700,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(description,
-                        style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                isEnabled
-                    ? Icons.arrow_forward_ios_rounded
-                    : Icons.lock_clock_rounded,
-                size: 20,
-                color: isEnabled ? AppTheme.tealLight : Colors.grey.shade500,
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
+}
+
+class _KnowledgeBaseIconPainter extends CustomPainter {
+  const _KnowledgeBaseIconPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.tealDark
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final center = size.width / 2;
+
+    final leftPage = Path()
+      ..moveTo(center, 7)
+      ..cubicTo(11, 5, 7, 5, 4, 7)
+      ..lineTo(4, 24)
+      ..cubicTo(8, 22, 12, 22, center, 25);
+    final rightPage = Path()
+      ..moveTo(center, 7)
+      ..cubicTo(19, 5, 23, 5, 26, 7)
+      ..lineTo(26, 24)
+      ..cubicTo(22, 22, 18, 22, center, 25);
+
+    canvas.drawPath(leftPage, paint);
+    canvas.drawPath(rightPage, paint);
+    canvas.drawLine(Offset(center, 7), Offset(center, 25), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _KnowledgeBaseIconPainter oldDelegate) => false;
 }

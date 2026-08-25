@@ -1,13 +1,16 @@
-import 'package:dio/dio.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/network_client.dart';
 import '../models/user_model.dart';
 import 'auth_data_source.dart';
+import '../../../device/data/ireach/ireach_exceptions.dart';
+import '../../../device/data/ireach/ireach_service.dart';
 
 class AuthRemoteDataSource implements AuthDataSource {
   final NetworkClient _client;
-  const AuthRemoteDataSource(this._client);
+  final IreachService _ireachService;
+
+  AuthRemoteDataSource(this._client, {IreachService? ireachService})
+      : _ireachService = ireachService ?? IreachService();
 
   @override
   Future<UserModel> authenticateNewInterviewer(
@@ -50,89 +53,37 @@ class AuthRemoteDataSource implements AuthDataSource {
     });
   }
 
+  // Existing interviewers must be authenticated for real: unlike the new-
+  // interviewer flow above, this must NOT fall back to mock data on error.
+  // authenticate()/getCurrentUser() route through the CORS-safe local proxy
+  // (see IreachConfig.smBase) instead of hitting smstg.ipsos.co.nz directly
+  // from the browser, and any failure here is a genuine login failure that
+  // has to reach the UI, not be swallowed into a fake success.
   @override
   Future<UserModel> authenticateExistingInterviewer(
       String username, String password) async {
     final normalizedUsername = username.trim();
 
     try {
-      final authResponse = await _postExistingInterviewerCredentials(
+      final token = await _ireachService.authenticate(
         normalizedUsername,
         password,
       );
+      final currentUser = await _ireachService.getCurrentUser(token);
 
-      final authData = authResponse.data;
-      if (authData != null) {
-        final token = _extractToken(authData);
-        if (token != null && token.isNotEmpty) {
-          final userData = await _fetchUserProfileOrFallback(
-            token,
-            normalizedUsername,
-          );
-
-          return UserModel.fromJson({
-            ...userData,
-            'username': userData['username'] ?? normalizedUsername,
-            'sessionToken': token,
-          });
-        }
-      }
-    } catch (_) {
-      // Fallback for standalone/demo testing on Vercel
-    }
-
-    return UserModel.fromJson(_authenticatedUserFallback(normalizedUsername));
-  }
-
-  Future<Map<String, dynamic>> _fetchUserProfileOrFallback(
-    String token,
-    String username,
-  ) async {
-    try {
-      return await _fetchUserProfile(token, username);
-    } on DioException catch (error) {
-      if (error.response?.statusCode != 404) {
-        rethrow;
-      }
-
-      return _authenticatedUserFallback(username);
+      return UserModel.fromJson({
+        'id': normalizedUsername,
+        'username': normalizedUsername,
+        'displayName': currentUser.name ?? normalizedUsername,
+        'userType': 'existing',
+        'deviceId': currentUser.computerNumber,
+        'deviceType': 'Laptop',
+        'sessionToken': token,
+      });
+    } on IreachException catch (error) {
+      throw Exception(error.toString());
     }
   }
-
-  Future<Response<Map<String, dynamic>>> _postExistingInterviewerCredentials(
-    String username,
-    String password,
-  ) async {
-    return _client.post<Map<String, dynamic>>(
-      AppConstants.existingAuthEndpoint,
-      data: {
-        'username': username,
-        'password': password,
-      },
-    );
-  }
-
-  Future<Map<String, dynamic>> _fetchUserProfile(
-    String token,
-    String username,
-  ) async {
-    final userResponse = await _client.get<dynamic>(
-      AppConstants.existingUserEndpoint,
-      headers: _tokenHeaders(token),
-    );
-    final userData = _extractUserRecord(userResponse.data, username);
-    if (userData != null) {
-      return userData;
-    }
-
-    throw Exception(
-      'User profile could not be retrieved. Please contact Helpdesk for assistance.',
-    );
-  }
-
-  Map<String, String> _tokenHeaders(String token) => {
-        'sm-authorize': token,
-      };
 
   void _verifyNewInterviewerPhone(
     Map<String, dynamic> data,
@@ -157,101 +108,4 @@ class AuthRemoteDataSource implements AuthDataSource {
       throw Exception('The mobile digits did not match our records.');
     }
   }
-
-  String? _extractToken(Map<String, dynamic> data) {
-    final token = data['token'] ??
-        data['session'] ??
-        data['accessToken'] ??
-        data['access_token'] ??
-        data['authToken'];
-    if (token is String) {
-      return token;
-    }
-
-    final nested = data['authentication'] ?? data['data'];
-    if (nested is Map<String, dynamic>) {
-      return _extractToken(nested);
-    }
-
-    return null;
-  }
-
-  Map<String, dynamic>? _extractUserRecord(dynamic data, String username) {
-    if (data is Map<String, dynamic>) {
-      final nestedUser = data['user'] ?? data['data'] ?? data['result'];
-      if (nestedUser is Map<String, dynamic>) {
-        return _withUsername(nestedUser, username);
-      }
-      if (nestedUser is List) {
-        return _findMatchingUser(nestedUser, username);
-      }
-
-      final users = data['users'] ?? data['items'] ?? data['records'];
-      final selectedUser = _findMatchingUser(users, username);
-      if (selectedUser != null) {
-        return selectedUser;
-      }
-
-      return _withUsername(data, username);
-    }
-
-    final selectedUser = _findMatchingUser(data, username);
-    if (selectedUser != null) {
-      return selectedUser;
-    }
-
-    return null;
-  }
-
-  Map<String, dynamic>? _findMatchingUser(dynamic users, String username) {
-    if (users is! List) {
-      return null;
-    }
-
-    final normalizedUsername = username.toLowerCase();
-    for (final item in users.whereType<Map<String, dynamic>>()) {
-      final itemUsername = (item['username'] ??
-              item['userName'] ??
-              item['login'] ??
-              item['surveyor'] ??
-              item['email'])
-          ?.toString();
-      if (itemUsername != null &&
-          itemUsername.toLowerCase() == normalizedUsername) {
-        return _withUsername(item, username);
-      }
-    }
-
-    final firstWithComputer =
-        users.whereType<Map<String, dynamic>>().firstWhere(
-              (item) =>
-                  item['computerNumber'] != null ||
-                  item['computerName'] != null ||
-                  item['computer'] != null,
-              orElse: () => const {},
-            );
-
-    return firstWithComputer.isEmpty
-        ? null
-        : _withUsername(firstWithComputer, username);
-  }
-
-  Map<String, dynamic> _withUsername(
-      Map<String, dynamic> user, String username) {
-    return {
-      ...user,
-      'username': user['username'] ?? user['userName'] ?? username,
-    };
-  }
-
-  Map<String, dynamic> _authenticatedUserFallback(String username) => {
-        'id': username,
-        'username': username,
-        'displayName': username,
-        'userType': 'existing',
-        'deviceId': 'IPLT569',
-        'deviceType': 'Laptop',
-        'project': 'Ipsos Field Survey',
-        'sessionToken': 'mock-existing-session-token',
-      };
 }

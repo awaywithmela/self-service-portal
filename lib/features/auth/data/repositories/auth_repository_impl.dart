@@ -52,16 +52,14 @@ class AuthRepositoryImpl implements AuthRepository {
     return 'We could not complete authentication. Please check your details or contact Helpdesk.';
   }
 
-  String _extractMessage(Exception e) =>
-      switch (e.toString().replaceFirst('Exception: ', '')) {
-        final message
-            when message.contains('not recognised') ||
-                message.contains('required') ||
-                message.contains('Unable to verify') ||
-                message.contains('mobile digits') ||
-                message.contains('Please contact Helpdesk') =>
-          message,
-        _ =>
-          'We could not complete authentication. Please check your details or contact Helpdesk.',
-      };
+  // Surface the real failure reason (bad credentials, proxy unreachable,
+  // session expired, etc.) instead of masking every non-whitelisted message
+  // behind a generic string — that made every real error indistinguishable
+  // and impossible to diagnose from the UI.
+  String _extractMessage(Exception e) {
+    final message = e.toString().replaceFirst('Exception: ', '').trim();
+    return message.isEmpty
+        ? 'We could not complete authentication. Please check your details or contact Helpdesk.'
+        : message;
+  }
 }

@@ -6,16 +6,21 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/authenticate_new_interviewer.dart';
 import '../../domain/usecases/authenticate_existing_interviewer.dart';
 import '../../../../core/network/network_providers.dart';
+import '../../../device/data/ireach/ireach_providers.dart';
 
 final _authDataSourceProvider = Provider<AuthDataSource>((ref) {
-  return AuthRemoteDataSource(ref.read(networkClientProvider));
+  return AuthRemoteDataSource(
+    ref.read(networkClientProvider),
+    ireachService: ref.read(ireachServiceProvider),
+  );
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(ref.read(_authDataSourceProvider));
 });
 
-final authenticateNewInterviewerProvider = Provider<AuthenticateNewInterviewer>((ref) {
+final authenticateNewInterviewerProvider =
+    Provider<AuthenticateNewInterviewer>((ref) {
   return AuthenticateNewInterviewer(ref.read(authRepositoryProvider));
 });
 

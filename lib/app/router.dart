@@ -27,7 +27,8 @@ abstract final class AppRouter {
       GoRoute(
           path: '/device-setup', builder: (_, __) => const DeviceSetupPage()),
       GoRoute(
-          path: '/update-ireach', builder: (_, __) => const UpdateIReachPage()),
+          path: '/update-ireach',
+          builder: (_, __) => const UpdateIReachPage()),
       GoRoute(
           path: '/knowledge-base',
           builder: (_, __) => const KnowledgeBasePage()),

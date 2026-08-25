@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/network_client.dart';
 import '../models/device_model.dart';
