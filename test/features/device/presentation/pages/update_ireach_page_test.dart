@@ -178,8 +178,8 @@ void main() {
       await tester.ensureVisible(checkbox);
       await tester.tap(checkbox);
       await tester.pumpAndSettle();
-      expect(find.text('Double-check I-Reach is closed'), findsOneWidget);
-      await tester.tap(find.text('Yes, it is closed'));
+      expect(find.text('Confirm I-Reach is synced and closed'), findsOneWidget);
+      await tester.tap(find.text('Yes, synced and closed'));
       await tester.pumpAndSettle();
 
       final startButtonFinder = find.ancestor(

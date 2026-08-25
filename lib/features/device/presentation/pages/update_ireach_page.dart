@@ -265,9 +265,9 @@ class _SyncCloseStep extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
-        title: const Text('Double-check I-Reach is closed'),
+        title: const Text('Confirm I-Reach is synced and closed'),
         content: const Text(
-          'Please make sure I-Reach is fully closed and your latest work has been synced before continuing the update.',
+          'Please confirm that your latest work is synced and I-Reach is fully closed before continuing the update.',
         ),
         actions: [
           TextButton(
@@ -276,7 +276,7 @@ class _SyncCloseStep extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Yes, it is closed'),
+            child: const Text('Yes, synced and closed'),
           ),
         ],
       ),

@@ -85549,7 +85549,7 @@ o=o.Dg(e)}return o}}
 A.ub.prototype={
 H(a){var s=null,r=this.c
 r=r==null?s:"GoException: "+r.a
-return A.vw(!0,A.eT(A.bp(A.b([B.XA,B.aT,A.ah(r==null?"page not found":r,s,s,s,s,s,s),B.aT,new A.EE(new A.a5a(a),B.Xo,s)],t.p),B.D,B.eY,B.n),s,s),B.au,!0)}}
+return A.vw(!0,A.eT(A.bp(A.b([B.XB,B.aT,A.ah(r==null?"page not found":r,s,s,s,s,s,s),B.aT,new A.EE(new A.a5a(a),B.Xo,s)],t.p),B.D,B.eY,B.n),s,s),B.au,!0)}}
 A.a5a.prototype={
 $0(){return A.dx(this.a).dJ("/",null)},
 $S:0}
@@ -85596,7 +85596,7 @@ A.BA.prototype={}
 A.uQ.prototype={
 H(a){var s=null,r=A.tj(s,!0,s,B.Xg),q=this.c
 q=q==null?s:"GoException: "+q.a
-return A.nZ(r,A.eT(A.bp(A.b([A.aEA(q==null?"page not found":q,s),A.Q5(!1,B.Xy,s,s,s,s,s,s,new A.abl(a),s,s)],t.p),B.D,B.eY,B.n),s,s),s)}}
+return A.nZ(r,A.eT(A.bp(A.b([A.aEA(q==null?"page not found":q,s),A.Q5(!1,B.Xz,s,s,s,s,s,s,new A.abl(a),s,s)],t.p),B.D,B.eY,B.n),s,s),s)}}
 A.abl.prototype={
 $0(){return A.dx(this.a).dJ("/",null)},
 $S:0}
@@ -87929,7 +87929,7 @@ return null},
 $S:34}
 A.ao9.prototype={
 $1(a){var s=null
-return A.aB2(A.b([A.Q5(!1,B.Xi,s,s,s,s,s,s,new A.ao8(a),s,s)],t.p),B.Fa,B.kx,B.AC)},
+return A.aB2(A.b([A.Q5(!1,B.Xj,s,s,s,s,s,s,new A.ao8(a),s,s)],t.p),B.Fa,B.kx,B.AC)},
 $S:217}
 A.ao8.prototype={
 $0(){return A.fC(this.a,!1).ee()},
@@ -88005,7 +88005,7 @@ s.a8(B.j5)
 s=this.c
 s.toString
 A.dx(s).dJ("/auth",null)},
-H(a){var s=this,r=null,q=s.gfT().oB($.iC(),t.FB).b,p=q==null?r:q.d,o=A.tj(r,!0,A.pX(r,r,B.eG,r,r,s.gafh(),r,r,r),B.Xw),n=A.bN(a,r,t.w).w.a.a<600?20:32
+H(a){var s=this,r=null,q=s.gfT().oB($.iC(),t.FB).b,p=q==null?r:q.d,o=A.tj(r,!0,A.pX(r,r,B.eG,r,r,s.gafh(),r,r,r),B.Xx),n=A.bN(a,r,t.w).w.a.a<600?20:32
 if(p===B.iy){q.toString
 p=s.a4S(a,q)}else p=s.a4Z(a)
 return A.nZ(o,new A.k7(p,new A.aa(n,28,n,28),780,r),r)},
@@ -88017,7 +88017,7 @@ p=A.A(a).ok.w
 p=A.ah("Email Address",r,r,r,p==null?r:p.lf(B.aC),r,r)
 o=A.DG(!1,r,s.w,B.IQ,!1,r,r,B.Ay,r,1,r,!1,r,r,r,B.lV,new A.aqw())
 n=A.A(a).ok.w
-return A.axY(A.bp(A.b([q,B.lF,p,B.lE,o,B.bo,A.ah("Mobile Phone",r,r,r,n==null?r:n.lf(B.aC),r,r),B.lE,A.DG(!0,r,s.x,B.IT,!0,r,A.b([$.aIu(),new A.AS(4,r)],t.VS),B.SX,4,1,r,!1,r,new A.aqx(s),r,B.ik,new A.aqy()),B.S6,A.Lv(B.ID,B.Xx,s.gaif()),B.bo,A.eT(A.ayS(B.Iv,A.ah("Need setup help? Check the Knowledge Base",r,r,r,A.dG().$3$color$fontSize$fontWeight(B.ae,16,B.aC),r,r),new A.aqz(a)),r,r)],m),B.at,B.l,B.n),s.y)},
+return A.axY(A.bp(A.b([q,B.lF,p,B.lE,o,B.bo,A.ah("Mobile Phone",r,r,r,n==null?r:n.lf(B.aC),r,r),B.lE,A.DG(!0,r,s.x,B.IT,!0,r,A.b([$.aIu(),new A.AS(4,r)],t.VS),B.SX,4,1,r,!1,r,new A.aqx(s),r,B.ik,new A.aqy()),B.S6,A.Lv(B.ID,B.Xy,s.gaif()),B.bo,A.eT(A.ayS(B.Iv,A.ah("Need setup help? Check the Knowledge Base",r,r,r,A.dG().$3$color$fontSize$fontWeight(B.ae,16,B.aC),r,r),new A.aqz(a)),r,r)],m),B.at,B.l,B.n),s.y)},
 a4S(a,a0){var s,r,q,p,o,n,m,l,k,j,i,h=this,g=null,f="Not available",e=B.b.ga5(B.c.nk(B.c.aY(a0.c),A.b4("\\s+",!0,!1,!1))),d=a0.r,c=h.a6K(d),b=h.abU(d)
 d=a0.w
 s=d==null?g:B.c.aY(d)
@@ -88192,7 +88192,7 @@ A.al8.prototype={
 $0(){return this.a.d=this.b},
 $S:0}
 A.tU.prototype={
-pZ(a,b){var s,r=null,q=b.oB($.iC(),t.FB).b,p=t.p,o=A.tj(A.b([new A.aM(B.Gv,A.ayS(B.Is,B.XD,new A.a2q(b,a)),r)],p),!1,r,B.Xk),n=q==null,m=n?r:q.c
+pZ(a,b){var s,r=null,q=b.oB($.iC(),t.FB).b,p=t.p,o=A.tj(A.b([new A.aM(B.Gv,A.ayS(B.Is,B.XE,new A.a2q(b,a)),r)],p),!1,r,B.Xk),n=q==null,m=n?r:q.c
 n=n?r:q.f
 s=A.A(a).ok.f
 return A.nZ(o,new A.k7(A.bp(A.b([new A.Yr(m,n,r),B.Ac,A.ah("Self-service tools",r,r,r,s==null?r:s.bt(B.bQ),r,r),B.lH,A.ah("Choose what you need help with today.",r,r,r,A.A(a).ok.z,r,r),B.cq,A.a8z(new A.a2r())],p),B.at,B.l,B.n),B.GN,1080,r),r)}}
@@ -88872,7 +88872,7 @@ A.dx(this.b).dJ("/auth",null)},
 $S:0}
 A.anq.prototype={
 $1(a){var s=null
-return new A.aM(B.GP,A.bp(A.b([A.ah("Helpdesk",s,s,s,A.A(a).ok.f,s,s),B.cJ,new A.uJ(B.Ii,B.Xn,B.XE,new A.anp(a),s),B.JB,B.JA],t.p),B.at,B.l,B.bg),s)},
+return new A.aM(B.GP,A.bp(A.b([A.ah("Helpdesk",s,s,s,A.A(a).ok.f,s,s),B.cJ,new A.uJ(B.Ii,B.Xn,B.XF,new A.anp(a),s),B.JB,B.JA],t.p),B.at,B.l,B.bg),s)},
 $S:588}
 A.anp.prototype={
 $0(){var s=this.a
@@ -88903,7 +88903,7 @@ $2(a,b){var s,r=null
 if(b.gui()===B.m9)s=new A.auj(a)
 else if(b.r===B.fp)s=r
 else s=b.gui()===B.ma?new A.auk(a):new A.aul(a)
-return A.nZ(A.tj(r,!0,A.pX(r,r,B.eG,r,r,s,r,r,r),B.XC),new A.k7(A.aLR(this.a.a4U(a,b),B.ez,A.aW6()),B.cV,760,r),r)},
+return A.nZ(A.tj(r,!0,A.pX(r,r,B.eG,r,r,s,r,r,r),B.XD),new A.k7(A.aLR(this.a.a4U(a,b),B.ez,A.aW6()),B.cV,760,r),r)},
 $S:590}
 A.auj.prototype={
 $0(){return A.dx(this.a).dJ("/existing-interviewer",null)},
@@ -88924,7 +88924,7 @@ A.RO.prototype={
 H(a){var s,r=null,q=A.e6(new A.aM(B.aB,A.ah("Update I-Reach application",r,r,r,B.ip,r,r),r),r,r,r,r,r),p=this.c.b,o=A.ah("Please confirm that your device ID is "+A.l(p)+" by clicking Continue. If this is not your current device, please contact help desk.",r,r,r,A.A(a).ok.y,B.cK,r)
 if(p==null)p="Unknown"
 s=t.p
-return A.bp(A.b([q,B.bj,A.e6(new A.aM(B.aB,A.bp(A.b([o,B.aT,A.cf(A.b([A.dN(A.ah("Computer Number",r,r,r,B.fo,r,r),1),A.ah(p,r,r,r,B.TZ,r,r)],s),B.D,B.l,B.n),B.bj,A.cf(A.b([A.ayq(!1,B.AD,r,r,r,r,r,r,new A.amC(a),r,r),B.bB,A.zO(!1,B.XB,r,r,r,r,r,r,new A.amD(a),r,r)],s),B.D,B.l,B.n)],s),B.S,B.l,B.n),r),r,r,r,r,r)],s),B.at,B.l,B.n)}}
+return A.bp(A.b([q,B.bj,A.e6(new A.aM(B.aB,A.bp(A.b([o,B.aT,A.cf(A.b([A.dN(A.ah("Computer Number",r,r,r,B.fo,r,r),1),A.ah(p,r,r,r,B.TZ,r,r)],s),B.D,B.l,B.n),B.bj,A.cf(A.b([A.ayq(!1,B.AD,r,r,r,r,r,r,new A.amC(a),r,r),B.bB,A.zO(!1,B.XC,r,r,r,r,r,r,new A.amD(a),r,r)],s),B.D,B.l,B.n)],s),B.S,B.l,B.n),r),r,r,r,r,r)],s),B.at,B.l,B.n)}}
 A.amC.prototype={
 $0(){return A.dx(this.a).dJ("/existing-interviewer-dashboard",null)},
 $S:0}
@@ -88969,7 +88969,7 @@ $0(){return A.ly(this.a,!1,t.h6).rw()},
 $S:0}
 A.atr.prototype={
 $1(a){var s=null
-return A.aB2(A.b([A.Q5(!1,B.Xs,s,s,s,s,s,s,new A.atp(a),s,s),A.zO(!1,B.Xj,s,s,s,s,s,s,new A.atq(a),s,s)],t.p),B.XF,B.Iq,B.Xh)},
+return A.aB2(A.b([A.Q5(!1,B.Xs,s,s,s,s,s,s,new A.atp(a),s,s),A.zO(!1,B.Xi,s,s,s,s,s,s,new A.atq(a),s,s)],t.p),B.Xh,B.Iq,B.Xw)},
 $S:217}
 A.atp.prototype={
 $0(){return A.fC(this.a,!1).vv(!1)},
@@ -89166,7 +89166,7 @@ m.push(new A.jL(l,A.ah(l,i,i,i,i,i,i),B.eb,i,e))}b=A.axM(B.IV,m,new A.ath(j),new
 m=j.as
 s=A.b([],s)
 for(o=0;o<3;++o){k=B.KL[o]
-s.push(new A.jL(k,A.ah(k,i,i,i,i,i,i),B.eb,i,e))}return A.nZ(f,new A.k7(A.axY(A.bp(A.b([q,B.ig,r,B.bo,c,B.bo,b,B.bo,A.axM(B.IP,s,new A.atj(j),new A.atk(),m,d),B.bo,A.DG(!0,i,j.x,B.IS,!0,i,i,i,i,8,5,!1,i,i,i,i,new A.atl()),B.lF,A.Lv(B.IG,B.Xz,j.gagM())],p),B.at,B.l,B.n),j.w),B.cV,760,i),i)}}
+s.push(new A.jL(k,A.ah(k,i,i,i,i,i,i),B.eb,i,e))}return A.nZ(f,new A.k7(A.axY(A.bp(A.b([q,B.ig,r,B.bo,c,B.bo,b,B.bo,A.axM(B.IP,s,new A.atj(j),new A.atk(),m,d),B.bo,A.DG(!0,i,j.x,B.IS,!0,i,i,i,i,8,5,!1,i,i,i,i,new A.atl()),B.lF,A.Lv(B.IG,B.XA,j.gagM())],p),B.at,B.l,B.n),j.w),B.cV,760,i),i)}}
 A.atb.prototype={
 $0(){var s=this.b
 s=s==null?null:s.d
@@ -96066,9 +96066,9 @@ B.Tm=new A.m(!0,B.m,null,".AppleSystemUIFont",null,null,null,null,null,null,null
 B.Xd=new A.ds(B.V3,B.U4,B.V4,B.VD,B.TI,B.TP,B.Uq,B.Vq,B.UE,B.W8,B.Tc,B.Tx,B.W4,B.Wm,B.Tm)
 B.AC=new A.bE("Contact Help Desk",null,null,null,null,null,null,null,null)
 B.Xg=new A.bE("Page Not Found",null,null,null,null,null,null,null,null)
-B.Xh=new A.bE("Double-check I-Reach is closed",null,null,null,null,null,null,null,null)
-B.Xi=new A.bE("Close",null,null,null,null,null,null,null,null)
-B.Xj=new A.bE("Yes, it is closed",null,null,null,null,null,null,null,null)
+B.Xh=new A.bE("Please confirm that your latest work is synced and I-Reach is fully closed before continuing the update.",null,null,null,null,null,null,null,null)
+B.Xi=new A.bE("Yes, synced and closed",null,null,null,null,null,null,null,null)
+B.Xj=new A.bE("Close",null,null,null,null,null,null,null,null)
 B.Xk=new A.bE("Interviewer dashboard",null,null,null,null,null,null,null,null)
 B.Xm=new A.bE("Create Support Ticket",null,null,null,null,null,null,null,null)
 B.Xn=new A.bE("Start chat",null,null,null,null,null,null,null,null)
@@ -96081,16 +96081,16 @@ B.Xs=new A.bE("Cancel",null,null,null,null,null,null,null,null)
 B.Xt=new A.bE("Please contact help desk.",null,null,null,null,null,null,null,null)
 B.AE=new A.bE("Knowledge Base",null,null,null,null,null,null,null,null)
 B.Xu=new A.bE("Retry",null,null,null,null,null,null,null,null)
-B.Xw=new A.bE("New Interviewer Setup",null,null,null,null,null,null,null,null)
-B.Xx=new A.bE("Verify Details",null,null,null,null,null,null,null,null)
-B.Xy=new A.bE("Home",null,null,null,null,null,null,null,null)
-B.Xz=new A.bE("Submit Ticket",null,null,null,null,null,null,null,null)
-B.XA=new A.bE("Page Not Found",null,B.fo,null,null,null,null,null,null)
-B.XB=new A.bE("Continue",null,null,null,null,null,null,null,null)
-B.XC=new A.bE("Update I-Reach application",null,null,null,null,null,null,null,null)
-B.XD=new A.bE("Sign out",null,null,null,null,null,null,null,null)
-B.XE=new A.bE("A chat widget can be connected here",null,null,null,null,null,null,null,null)
-B.XF=new A.bE("Please make sure I-Reach is fully closed and your latest work has been synced before continuing the update.",null,null,null,null,null,null,null,null)
+B.Xw=new A.bE("Confirm I-Reach is synced and closed",null,null,null,null,null,null,null,null)
+B.Xx=new A.bE("New Interviewer Setup",null,null,null,null,null,null,null,null)
+B.Xy=new A.bE("Verify Details",null,null,null,null,null,null,null,null)
+B.Xz=new A.bE("Home",null,null,null,null,null,null,null,null)
+B.XA=new A.bE("Submit Ticket",null,null,null,null,null,null,null,null)
+B.XB=new A.bE("Page Not Found",null,B.fo,null,null,null,null,null,null)
+B.XC=new A.bE("Continue",null,null,null,null,null,null,null,null)
+B.XD=new A.bE("Update I-Reach application",null,null,null,null,null,null,null,null)
+B.XE=new A.bE("Sign out",null,null,null,null,null,null,null,null)
+B.XF=new A.bE("A chat widget can be connected here",null,null,null,null,null,null,null,null)
 B.XG=new A.bE("This may take up to two minutes. Please keep this page open.",null,null,null,null,null,null,null,null)
 B.XH=new A.bE("Device Setup",null,null,null,null,null,null,null,null)
 B.XI=new A.bE("Your session has expired. Please sign in again to continue.",null,null,null,null,null,null,null,null)
